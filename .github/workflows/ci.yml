@@ -195,7 +195,7 @@ jobs:
           exit 1
 
   failed-test:
-    name: 'Expected failure: test step'
+    name: "Expected failure: test step"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # The failing step is the point; the artifacts job checks that its logs were uploaded. Its
@@ -449,7 +449,17 @@ jobs:
   gate:
     name: CI passed
     if: ${{ always() }}
-    needs: [checks, e2e, infra, failure, quiet, two-lanes, install, failed-script, unnamed, artifacts]
+    needs:
+      - checks
+      - e2e
+      - infra
+      - failure
+      - quiet
+      - two-lanes
+      - install
+      - failed-script
+      - unnamed
+      - artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
