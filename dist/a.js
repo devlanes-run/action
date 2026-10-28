@@ -82659,6 +82659,137 @@ function getIDToken(aud) {
  */
 
 //# sourceMappingURL=core.js.map
+// Reads the action's inputs once, so the rest of the code works with typed values and every
+// mistake in a workflow is reported before anything is installed or started.
+const commands = [
+    'start',
+    'with',
+    'stop',
+    'install'
+];
+const shells = [
+    'bash',
+    'sh',
+    'pwsh',
+    'powershell',
+    'cmd'
+];
+const uploadModes = [
+    'on-failure',
+    'always',
+    'never'
+];
+const cleanupModes = [
+    'stop',
+    'clean',
+    'keep'
+];
+const hostsModes = [
+    'auto',
+    'true',
+    'false'
+];
+/** Parses every input, throwing an error that names the input when a value is invalid. */ function readInputs(read, platform) {
+    const command = oneOf(read, 'command', commands, 'start');
+    const run = read('run');
+    if (command === 'with' && !run.trim()) {
+        throw new Error('Input "run" is required when command is "with"');
+    }
+    return {
+        version: inputs_version(read('version')),
+        command,
+        run,
+        shell: oneOf(read, 'shell', shells, platform === 'win32' ? 'pwsh' : 'bash'),
+        profiles: inputs_list(read('profile'), /[,\n]/),
+        units: inputs_list(read('units'), /\s+/),
+        timeout: read('timeout').trim(),
+        workingDirectory: read('working-directory').trim() || '.',
+        home: read('home').trim(),
+        config: read('config'),
+        trust: flag(read, 'trust', true),
+        hostsFile: oneOf(read, 'hosts-file', hostsModes, 'auto'),
+        lowPorts: flag(read, 'low-ports', true),
+        exportEnv: flag(read, 'export-env', true),
+        exportCa: flag(read, 'export-ca', true),
+        uploadLogs: uploadMode(read('upload-logs')),
+        artifactName: read('artifact-name').trim(),
+        retentionDays: retention(read('retention-days')),
+        cleanup: oneOf(read, 'cleanup', cleanupModes, 'stop'),
+        token: read('token').trim()
+    };
+}
+/** `upload-logs`, where `true` and `false` mean `always` and `never`. */ function uploadMode(value) {
+    const trimmed = value.trim().toLowerCase();
+    if (trimmed === 'true') return 'always';
+    if (trimmed === 'false') return 'never';
+    return oneOf(()=>trimmed, 'upload-logs', uploadModes, 'on-failure');
+}
+/**
+ * The devlanes version this release of the action was tested with, installed when neither the
+ * `version` input nor the project's files name one.
+ */ const defaultVersion = '0.7.0';
+/** The oldest devlanes the action supports; its CI runs against nothing older. */ const minimumVersion = '0.7.0';
+/** A bare release version, `X.Y.Z[-pre]`, in lower case. */ const releasePattern = /^\d+\.\d+\.\d+(-[0-9a-z.-]+)?$/;
+/**
+ * A `version` input normalized to `latest`, `next` or a bare `X.Y.Z[-pre]`. Empty stays empty,
+ * which means the version comes from the project's lockfile or the action's default.
+ */ function inputs_version(value) {
+    const trimmed = value.trim().toLowerCase();
+    if (!trimmed) return '';
+    if (trimmed === 'latest') return 'latest';
+    if (trimmed === 'next') return 'next';
+    const bare = trimmed.startsWith('v') ? trimmed.slice(1) : trimmed;
+    if (!releasePattern.test(bare)) {
+        throw new Error(`Input "version" must be latest, next or a version such as ${defaultVersion}, not "${value}"`);
+    }
+    if (compareVersions(bare, minimumVersion) < 0) {
+        throw new Error(`devlanes ${bare} is too old for this action; use ${minimumVersion} or later`);
+    }
+    return bare;
+}
+/**
+ * Orders two `X.Y.Z[-pre]` versions as semver does: by number, then a prerelease before its
+ * release. Prerelease identifiers compare as text, which is enough for `-rc.N`-style tags.
+ */ function compareVersions(a, b) {
+    const [aCore = '', aPre] = a.split('-', 2);
+    const [bCore = '', bPre] = b.split('-', 2);
+    const aParts = aCore.split('.').map(Number);
+    const bParts = bCore.split('.').map(Number);
+    for(let index = 0; index < 3; index++){
+        const difference = (aParts[index] ?? 0) - (bParts[index] ?? 0);
+        if (difference !== 0) return Math.sign(difference);
+    }
+    if (aPre === bPre) return 0;
+    if (aPre === undefined) return 1;
+    if (bPre === undefined) return -1;
+    return aPre < bPre ? -1 : 1;
+}
+/** Non-empty entries of a list input split by `separator`. */ function inputs_list(value, separator) {
+    return value.split(separator).map((entry)=>entry.trim()).filter(Boolean);
+}
+/** A choice input, falling back to `fallback` when empty. */ function oneOf(read, name, choices, fallback) {
+    const value = read(name).trim().toLowerCase();
+    if (!value) return fallback;
+    if (choices.includes(value)) return value;
+    throw new Error(`Input "${name}" must be one of ${choices.join(', ')}, not "${value}"`);
+}
+/** A boolean input, `true` or `false` in any letter case. */ function flag(read, name, fallback) {
+    const value = read(name).trim().toLowerCase();
+    if (!value) return fallback;
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    throw new Error(`Input "${name}" must be true or false, not "${value}"`);
+}
+/** `retention-days` as a whole number of days, or undefined to keep the repository default. */ function retention(value) {
+    const trimmed = value.trim();
+    if (!trimmed) return undefined;
+    const days = Number(trimmed);
+    if (!Number.isInteger(days) || days < 1 || days > 90) {
+        throw new Error(`Input "retention-days" must be a whole number from 1 to 90, not "${value}"`);
+    }
+    return days;
+}
+
 
 // Runs the devlanes CLI. Long commands stream into the job log so the CLI's own log groups and
 // annotations reach GitHub; queries capture JSON for outputs.
@@ -82899,133 +83030,6 @@ function getIDToken(aud) {
     const text = await readFile(path, 'utf8');
     const cleaned = withoutBlock(text, id);
     if (cleaned !== text) await writeHosts(platform, path, cleaned);
-}
-
-// Reads the action's inputs once, so the rest of the code works with typed values and every
-// mistake in a workflow is reported before anything is installed or started.
-const commands = [
-    'start',
-    'with',
-    'stop',
-    'install'
-];
-const shells = [
-    'bash',
-    'sh',
-    'pwsh',
-    'powershell',
-    'cmd'
-];
-const uploadModes = [
-    'on-failure',
-    'always',
-    'never'
-];
-const cleanupModes = [
-    'stop',
-    'clean',
-    'keep'
-];
-const hostsModes = [
-    'auto',
-    'true',
-    'false'
-];
-/** Parses every input, throwing an error that names the input when a value is invalid. */ function readInputs(read, platform) {
-    const command = oneOf(read, 'command', commands, 'start');
-    const run = read('run');
-    if (command === 'with' && !run.trim()) {
-        throw new Error('Input "run" is required when command is "with"');
-    }
-    return {
-        version: inputs_version(read('version')),
-        command,
-        run,
-        shell: oneOf(read, 'shell', shells, platform === 'win32' ? 'pwsh' : 'bash'),
-        profiles: inputs_list(read('profile'), /[,\n]/),
-        units: inputs_list(read('units'), /\s+/),
-        timeout: read('timeout').trim(),
-        workingDirectory: read('working-directory').trim() || '.',
-        home: read('home').trim(),
-        config: read('config'),
-        trust: flag(read, 'trust', true),
-        hostsFile: oneOf(read, 'hosts-file', hostsModes, 'auto'),
-        lowPorts: flag(read, 'low-ports', true),
-        exportEnv: flag(read, 'export-env', true),
-        exportCa: flag(read, 'export-ca', true),
-        uploadLogs: uploadMode(read('upload-logs')),
-        artifactName: read('artifact-name').trim(),
-        retentionDays: retention(read('retention-days')),
-        cleanup: oneOf(read, 'cleanup', cleanupModes, 'stop'),
-        token: read('token').trim()
-    };
-}
-/** `upload-logs`, where `true` and `false` mean `always` and `never`. */ function uploadMode(value) {
-    const trimmed = value.trim().toLowerCase();
-    if (trimmed === 'true') return 'always';
-    if (trimmed === 'false') return 'never';
-    return oneOf(()=>trimmed, 'upload-logs', uploadModes, 'on-failure');
-}
-/**
- * The devlanes version this release of the action was tested with. action.yml has the same
- * default; an explicitly empty `version:` (such as an unset matrix value) gets it too.
- */ const defaultVersion = '0.7.0';
-/** The oldest devlanes the action supports; its CI runs against nothing older. */ const minimumVersion = '0.7.0';
-/** A `version` input normalized to `latest`, `next` or a bare `X.Y.Z[-pre]`. */ function inputs_version(value) {
-    const trimmed = value.trim().toLowerCase();
-    if (!trimmed) return defaultVersion;
-    if (trimmed === 'latest') return 'latest';
-    if (trimmed === 'next') return 'next';
-    const bare = trimmed.startsWith('v') ? trimmed.slice(1) : trimmed;
-    if (!/^\d+\.\d+\.\d+(-[0-9a-z.-]+)?$/.test(bare)) {
-        throw new Error(`Input "version" must be latest, next or a version such as ${defaultVersion}, not "${value}"`);
-    }
-    if (compareVersions(bare, minimumVersion) < 0) {
-        throw new Error(`devlanes ${bare} is too old for this action; use ${minimumVersion} or later`);
-    }
-    return bare;
-}
-/**
- * Orders two `X.Y.Z[-pre]` versions as semver does: by number, then a prerelease before its
- * release. Prerelease identifiers compare as text, which is enough for `-rc.N`-style tags.
- */ function compareVersions(a, b) {
-    const [aCore = '', aPre] = a.split('-', 2);
-    const [bCore = '', bPre] = b.split('-', 2);
-    const aParts = aCore.split('.').map(Number);
-    const bParts = bCore.split('.').map(Number);
-    for(let index = 0; index < 3; index++){
-        const difference = (aParts[index] ?? 0) - (bParts[index] ?? 0);
-        if (difference !== 0) return Math.sign(difference);
-    }
-    if (aPre === bPre) return 0;
-    if (aPre === undefined) return 1;
-    if (bPre === undefined) return -1;
-    return aPre < bPre ? -1 : 1;
-}
-/** Non-empty entries of a list input split by `separator`. */ function inputs_list(value, separator) {
-    return value.split(separator).map((entry)=>entry.trim()).filter(Boolean);
-}
-/** A choice input, falling back to `fallback` when empty. */ function oneOf(read, name, choices, fallback) {
-    const value = read(name).trim().toLowerCase();
-    if (!value) return fallback;
-    if (choices.includes(value)) return value;
-    throw new Error(`Input "${name}" must be one of ${choices.join(', ')}, not "${value}"`);
-}
-/** A boolean input, `true` or `false` in any letter case. */ function flag(read, name, fallback) {
-    const value = read(name).trim().toLowerCase();
-    if (!value) return fallback;
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    throw new Error(`Input "${name}" must be true or false, not "${value}"`);
-}
-/** `retention-days` as a whole number of days, or undefined to keep the repository default. */ function retention(value) {
-    const trimmed = value.trim();
-    if (!trimmed) return undefined;
-    const days = Number(trimmed);
-    if (!Number.isInteger(days) || days < 1 || days > 90) {
-        throw new Error(`Input "retention-days" must be a whole number from 1 to 90, not "${value}"`);
-    }
-    return days;
 }
 
 // Whether the job has a failed step, for `upload-logs: on-failure`. An action cannot read
@@ -144499,4 +144503,4 @@ const state_key = 'devlanes';
     return (env[stoppedVariable] ?? '').split('\n').filter(Boolean);
 }
 
-export { addHosts, addPath, childEnv, cli, core_debug, core_group, core_info, core_warning, exec_exec, exportVariable, failedUnits, getInput, hostsPath, httpsPort, infraOutputs, io_cp, isDebug, jobFailed, laneHostnames, laneLogsDir, lib_HttpClient, loadState, logs_artifactName, mkdirP, parseJson, readInputs, readyVariable, removeHosts, resolvesToLoopback, rmRF, serviceOutputs, setFailed, setOutput, shouldUpload, state_saveState, stoppedLanes, stoppedVariable, uploadLogs, urlOutputs, which, writeDiagnostics };
+export { addHosts, addPath, childEnv, cli, compareVersions, core_debug, core_group, core_info, core_warning, exec_exec, exportVariable, failedUnits, getInput, hostsPath, httpsPort, infraOutputs, io_cp, isDebug, jobFailed, laneHostnames, laneLogsDir, lib_HttpClient, loadState, logs_artifactName, mkdirP, parseJson, readInputs, readyVariable, releasePattern, removeHosts, resolvesToLoopback, rmRF, serviceOutputs, setFailed, setOutput, shouldUpload, state_saveState, stoppedLanes, stoppedVariable, uploadLogs, urlOutputs, which, writeDiagnostics };

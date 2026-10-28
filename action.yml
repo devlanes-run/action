@@ -11,10 +11,12 @@ inputs:
   version:
     description: >-
       devlanes version to install: `latest`, `next` or a release such as `0.7.0`, which is the
-      oldest the action supports. The default is the release this version of the action was
-      tested with.
+      oldest the action supports. Empty reads the version from the project's lockfile (pnpm, npm,
+      yarn, bun, uv, poetry) or an exact version in package.json, searching `working-directory`
+      and the folders above it up to the workspace, else uses 0.7.0, the release this version of
+      the action was tested with.
     required: false
-    default: "0.7.0"
+    default: ""
   command:
     description: >-
       What to do after installing: `start` brings up the lane and leaves it running for later
@@ -133,6 +135,10 @@ inputs:
 outputs:
   version:
     description: The installed devlanes version.
+  version-source:
+    description: >-
+      Where the version came from: `input`, the path of the lockfile or package.json that pins it,
+      relative to the workspace (such as `pnpm-lock.yaml`), or `default`.
   home:
     description: The devlanes home in use. Set by every command but `stop`.
   lane:

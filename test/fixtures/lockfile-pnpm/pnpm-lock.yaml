@@ -1,0 +1,99 @@
+lockfileVersion: "9.0"
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+  .:
+    devDependencies:
+      devlanes:
+        specifier: ">=0.7.0 <0.7.1"
+        version: 0.7.0
+
+packages:
+  "@devlanes/darwin-arm64@0.7.0":
+    resolution:
+      {
+        integrity: sha512-ntgjjW9VBJFz/hwn/Rl03bQIKlAjwFfghGwNpm8NvurfWJLcKDBZUIDGdqOV5DCoA+Fci2ZVA0Ifnf3WpGUiBQ==,
+      }
+    cpu: [arm64]
+    os: [darwin]
+
+  "@devlanes/darwin-x64@0.7.0":
+    resolution:
+      {
+        integrity: sha512-sWBFd7wxzu/r41bYs4tC/H7347FIPZsDHwXh8B1xCaNv/wxVnymdUtk2E0MQJtcDDBY2X0CzZpD4Aim+YTC1Qg==,
+      }
+    cpu: [x64]
+    os: [darwin]
+
+  "@devlanes/linux-arm64@0.7.0":
+    resolution:
+      {
+        integrity: sha512-Nb0P6tyuVBwrB6w+2rA5dfoZC4hRUSLU+JUgm2E30TGmdY4cjV8Vw9fY7Y44qQttrA2XmNNm3ish+2o8Ohs/Qg==,
+      }
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  "@devlanes/linux-x64@0.7.0":
+    resolution:
+      {
+        integrity: sha512-ps7bYYW7JlCUSxxV3cYfHoIl33lRo1vJXPTCLq2h+41qOV/800TFA4BmjvPHK/g68kb0xZpPEUgPUtqK/fcRUg==,
+      }
+    cpu: [x64]
+    os: [linux]
+    libc: [glibc]
+
+  "@devlanes/win32-arm64@0.7.0":
+    resolution:
+      {
+        integrity: sha512-F7s7o/6SlmOSWVIa9LpTpgX34m4Wi2wQRpaVnydLiacuiurRYtyIrdnP6gY8uH7PA4quGz82bMIvLX3hvpNZtQ==,
+      }
+    cpu: [arm64]
+    os: [win32]
+
+  "@devlanes/win32-x64@0.7.0":
+    resolution:
+      {
+        integrity: sha512-nfigTuPzmxzQhlAFtFLzDW+xEmAYQ4aYUUU6Zyc41aSXNbF8j5t0EBbeu2gOXonFL6d67JZ3tK5+7/ynjsNU4A==,
+      }
+    cpu: [x64]
+    os: [win32]
+
+  devlanes@0.7.0:
+    resolution:
+      {
+        integrity: sha512-Y8T6RhVuekAd+jAB0PlFcfqndFb0tEPppxA/GHpa6xLsOCcRosH0vO/x/UNRAQG8L71JADVF/etDHVYim7BjLw==,
+      }
+    engines: { node: ">=18" }
+    hasBin: true
+
+snapshots:
+  "@devlanes/darwin-arm64@0.7.0":
+    optional: true
+
+  "@devlanes/darwin-x64@0.7.0":
+    optional: true
+
+  "@devlanes/linux-arm64@0.7.0":
+    optional: true
+
+  "@devlanes/linux-x64@0.7.0":
+    optional: true
+
+  "@devlanes/win32-arm64@0.7.0":
+    optional: true
+
+  "@devlanes/win32-x64@0.7.0":
+    optional: true
+
+  devlanes@0.7.0:
+    optionalDependencies:
+      "@devlanes/darwin-arm64": 0.7.0
+      "@devlanes/darwin-x64": 0.7.0
+      "@devlanes/linux-arm64": 0.7.0
+      "@devlanes/linux-x64": 0.7.0
+      "@devlanes/win32-arm64": 0.7.0
+      "@devlanes/win32-x64": 0.7.0

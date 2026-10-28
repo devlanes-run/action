@@ -27,6 +27,8 @@ test('an empty input means the same as the default in action.yml', async () => {
   );
   assert.deepEqual(readInputs(reader({}), 'linux'), defaults);
   assert.match(metadata.inputs.token?.default ?? '', /github\.token/);
+  // Empty is what makes the action read the version from the project's lockfile.
+  assert.equal(metadata.inputs.version?.default, '');
 });
 
 test('upload-logs takes true and false for always and never', () => {
@@ -37,7 +39,7 @@ test('upload-logs takes true and false for always and never', () => {
 
 test('defaults', () => {
   const inputs = readInputs(reader({}), 'linux');
-  assert.equal(inputs.version, defaultVersion);
+  assert.equal(inputs.version, '');
   assert.equal(inputs.command, 'start');
   assert.equal(inputs.shell, 'bash');
   assert.equal(inputs.workingDirectory, '.');
@@ -101,7 +103,8 @@ test('retention-days takes whole days from 1 to 90', () => {
 });
 
 test('versions accept latest, next and exact releases with or without v', () => {
-  assert.equal(version(''), defaultVersion);
+  assert.equal(version(''), '');
+  assert.equal(version('  '), '');
   assert.equal(version('Latest'), 'latest');
   assert.equal(version('next'), 'next');
   assert.equal(version('0.7.0'), '0.7.0');

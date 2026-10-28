@@ -81,23 +81,29 @@ function uploadMode(value: string): UploadMode {
 }
 
 /**
- * The devlanes version this release of the action was tested with. action.yml has the same
- * default; an explicitly empty `version:` (such as an unset matrix value) gets it too.
+ * The devlanes version this release of the action was tested with, installed when neither the
+ * `version` input nor the project's files name one.
  */
 export const defaultVersion = '0.7.0';
 
 /** The oldest devlanes the action supports; its CI runs against nothing older. */
 export const minimumVersion = '0.7.0';
 
-/** A `version` input normalized to `latest`, `next` or a bare `X.Y.Z[-pre]`. */
+/** A bare release version, `X.Y.Z[-pre]`, in lower case. */
+export const releasePattern = /^\d+\.\d+\.\d+(-[0-9a-z.-]+)?$/;
+
+/**
+ * A `version` input normalized to `latest`, `next` or a bare `X.Y.Z[-pre]`. Empty stays empty,
+ * which means the version comes from the project's lockfile or the action's default.
+ */
 export function version(value: string): string {
   const trimmed = value.trim().toLowerCase();
-  if (!trimmed) return defaultVersion;
+  if (!trimmed) return '';
   if (trimmed === 'latest') return 'latest';
   if (trimmed === 'next') return 'next';
 
   const bare = trimmed.startsWith('v') ? trimmed.slice(1) : trimmed;
-  if (!/^\d+\.\d+\.\d+(-[0-9a-z.-]+)?$/.test(bare)) {
+  if (!releasePattern.test(bare)) {
     throw new Error(
       `Input "version" must be latest, next or a version such as ${defaultVersion}, not "${value}"`
     );

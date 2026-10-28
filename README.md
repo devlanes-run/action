@@ -30,7 +30,7 @@ While the lane starts, the log shows devlanes' own output: a collapsible group p
 
 | Input | Default | Description |
 | --- | --- | --- |
-| `version` | `0.7.0` | devlanes version: `latest`, `next` (the newest build of devlanes' main branch) or a release of 0.7.0 or later. The default is the release this version of the action was tested with. |
+| `version` | from the lockfile, else `0.7.0` | devlanes version: `latest`, `next` (the newest build of devlanes' main branch) or a release of 0.7.0 or later. Empty reads the version from the project's lockfile, else uses 0.7.0, the release this version of the action was tested with. See [Choosing the devlanes version](#choosing-the-devlanes-version). |
 | `command` | `start` | `start`, `with`, `stop` or `install`. |
 | `run` | | Script for `command: with`. It runs in `working-directory` with the lane's environment. |
 | `shell` | `bash`, `pwsh` on Windows | Shell for `run`: `bash`, `sh`, `pwsh`, `powershell` or `cmd`, with the flags GitHub uses for `run:` steps. `bash` on Windows is Git Bash. |
@@ -58,6 +58,7 @@ While the lane starts, the log shows devlanes' own output: a collapsible group p
 | Output | Set by | Description |
 | --- | --- | --- |
 | `version` | every command | The installed devlanes version. |
+| `version-source` | every command | Where the version came from: `input`, the path of the file that pins it relative to the workspace (such as `pnpm-lock.yaml`), or `default`. |
 | `home` | all but `stop` | The devlanes home. |
 | `ca-cert` | all but `stop` | Path of the devlanes CA certificate. |
 | `ca-bundle` | all but `stop` | Path of a bundle with the system roots and the devlanes CA. |
@@ -249,6 +250,35 @@ Each use gets its own lane, logs folder and artifact. The first use prepares the
 A home under `runner.temp` keeps each job's lanes and ports apart from the previous job's, and `cleanup: clean` removes the lane's data and stops its containers, which otherwise survive `devlanes stop`. `trust` and `low-ports` change the machine and are never undone. With a new home per job, `trust` would add another CA to the system store every time, so leave both off, or trust one CA by hand and keep a fixed `home`.
 
 ### Choosing the devlanes version
+
+A project that has devlanes as a dependency does not need `version`: the action installs the version its lockfile resolved, the same one the developers run.
+
+```yaml
+# package.json has "devlanes": "^0.7.0" and pnpm-lock.yaml resolved it to 0.7.2
+- uses: devlanes-run/action@v0   # installs 0.7.2
+```
+
+The first of these that names a version wins:
+
+1. The `version` input: `latest`, `next` or a release such as `0.7.0`.
+2. A lockfile that names devlanes.
+3. An exact version of devlanes in `package.json` (`dependencies`, `devDependencies` or `optionalDependencies`), such as `0.7.2`. Ranges such as `^0.7.0` are ignored.
+4. 0.7.0, the release this version of the action was tested with.
+
+The action looks in `working-directory`, then in each folder above it up to the workspace, and in each folder reads these files in this order:
+
+| File | Version |
+| --- | --- |
+| `pnpm-lock.yaml` | The importer of the folder, or of the nearest folder above it. |
+| `package-lock.json`, `npm-shrinkwrap.json` | `node_modules/devlanes` (lockfile v2 and v3). |
+| `yarn.lock` | The `devlanes@` entry, Yarn classic or Berry. |
+| `bun.lock` | The `devlanes` package. The binary `bun.lockb` is not read. |
+| `uv.lock`, `poetry.lock` | The `devlanes` package, with PyPI versions such as `0.8.0rc1` read as `0.8.0-rc.1`. |
+| `package.json` | An exact version only. |
+
+A file that cannot be parsed gets a warning and the search goes on. A version older than 0.7.0 fails the step; set `version` to install another one. The log and the `version-source` output say where the version came from.
+
+To pick the version in the workflow instead:
 
 ```yaml
 - uses: devlanes-run/action@v0

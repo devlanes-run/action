@@ -1,13 +1,13 @@
-import { homedir, tmpdir } from "node:os";
-import { dirname, join, resolve as external_node_path_resolve } from "node:path";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { homedir, tmpdir } from "node:os";
+import { dirname, isAbsolute, join, relative, resolve as external_node_path_resolve, sep } from "node:path";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createHash, randomUUID } from "node:crypto";
 import "child_process";
 import { ok as external_assert_ok } from "assert";
 import { spawn } from "node:child_process";
 import { __webpack_require__ } from "./rslib-runtime.js";
-import { cli, getInput, shouldUpload, stoppedVariable, logs_artifactName, mkdirP, io_cp, urlOutputs, readInputs, resolvesToLoopback, serviceOutputs, rmRF, stoppedLanes, addHosts, writeDiagnostics, infraOutputs, failedUnits, setOutput, hostsPath, laneLogsDir, readyVariable, uploadLogs, addPath, parseJson, core_info, laneHostnames, httpsPort, core_debug, exportVariable, core_warning, setFailed, jobFailed, lib_HttpClient, state_saveState, isDebug, core_group, which, childEnv, exec_exec } from "./a.js";
+import { cli, compareVersions, getInput, shouldUpload, stoppedVariable, logs_artifactName, mkdirP, io_cp, urlOutputs, readInputs, resolvesToLoopback, serviceOutputs, releasePattern, rmRF, stoppedLanes, addHosts, writeDiagnostics, infraOutputs, failedUnits, setOutput, hostsPath, laneLogsDir, readyVariable, uploadLogs, addPath, parseJson, core_info, laneHostnames, httpsPort, core_debug, exportVariable, core_warning, setFailed, jobFailed, lib_HttpClient, state_saveState, isDebug, core_group, which, childEnv, exec_exec } from "./a.js";
 
 import { createRequire as __rspack_createRequire } from "node:module";
 const __rspack_createRequire_require = __rspack_createRequire(import.meta.url);
@@ -5226,7 +5226,7 @@ __rspack_unused_export = lexer.Lexer;
 __rspack_unused_export = lineCounter.LineCounter;
 __rspack_unused_export = parser.Parser;
 exports.qg = publicApi.parse;
-__rspack_unused_export = publicApi.parseAllDocuments;
+exports.hR = publicApi.parseAllDocuments;
 __rspack_unused_export = publicApi.parseDocument;
 __rspack_unused_export = publicApi.stringify;
 __rspack_unused_export = visit.visit;
@@ -11001,6 +11001,7 @@ exports.visitAsync = visitAsync;
 
 
 
+
 // The variables that make Node, Deno, Python and OpenSSL-based tools trust the devlanes CA
 // without touching the OS store, which on macOS and Windows runners needs a dialog nobody can
 // answer. They mirror what devlanes sets for its own services.
@@ -11065,6 +11066,1550 @@ exports.visitAsync = visitAsync;
         variables[name] = combined;
     }
     return variables;
+}
+
+
+/*!
+ * Copyright (c) Squirrel Chat et al., All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+function getLineColFromPtr(string, ptr) {
+    let lines = string.slice(0, ptr).split(/\r?\n/);
+    return [lines.length, lines.pop().length + 1];
+}
+function makeCodeBlock(string, line, column) {
+    let lines = string.split(/\r?\n/);
+    let codeblock = '';
+    let numberLen = (Math.log10(line + 1) | 0) + 1;
+    for (let i = line - 1; i <= line + 1; i++) {
+        let l = lines[i - 1];
+        if (!l)
+            continue;
+        codeblock += i.toString().padEnd(numberLen, ' ');
+        codeblock += ':  ';
+        codeblock += l;
+        codeblock += '\n';
+        if (i === line) {
+            codeblock += ' '.repeat(numberLen + column + 2);
+            codeblock += '^\n';
+        }
+    }
+    return codeblock;
+}
+class error_TomlError extends Error {
+    line;
+    column;
+    codeblock;
+    constructor(message, options) {
+        const [line, column] = getLineColFromPtr(options.toml, options.ptr);
+        const codeblock = makeCodeBlock(options.toml, line, column);
+        super(`Invalid TOML document: ${message}\n\n${codeblock}`, options);
+        this.line = line;
+        this.column = column;
+        this.codeblock = codeblock;
+    }
+    /** @internal */
+    static x(message, ctx, ptr) {
+        throw new error_TomlError(message, { toml: ctx.s, ptr: ptr ?? ctx.p });
+    }
+}
+
+/*!
+ * Copyright (c) Squirrel Chat et al., All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/** @internal */
+function parseString(ctx) {
+    let startPtr = ctx.p;
+    let c = ctx.s.charCodeAt(ctx.p++);
+    let first = c;
+    let isLiteral = c === 0x27; /* ' */
+    let isMultiline = c === ctx.s.charCodeAt(ctx.p) && c === ctx.s.charCodeAt(ctx.p + 1);
+    if (isMultiline) {
+        // Trim initial newline
+        if ((c = ctx.s.charCodeAt(ctx.p += 2)) === 0xa /* \n */)
+            ctx.p++;
+        else if (c === 0xd /* \r */ && ctx.s.charCodeAt(ctx.p + 1) === 0xa /* \n */)
+            ctx.p += 2;
+    }
+    // For the record: it is not worth it to use a fast-path for literal strings using `indexOf`.
+    // Doing a char-by-char iteration ends up dispatching less instructions, for the same wall-clock runtime.
+    let parsed = '';
+    let sliceStart = ctx.p;
+    // states:
+    //   0 - decoding
+    //   1 - decoding escape
+    //   2 - whitespace escape (no newline encountered yet, must fail on non-whitespace)
+    //   3 - whitespace escape (newline encountered, allowed to transition back to normal decode)
+    let state = 0;
+    for (; ctx.p < ctx.s.length; ctx.p++) {
+        c = ctx.s.charCodeAt(ctx.p);
+        // Deal with newlines first, since that simplifies control character checking and handling across all states
+        if (isMultiline && (c === 0xa /* \n */ || (c === 0xd /* \r */ && ctx.s.charCodeAt(ctx.p + 1) === 0xa /* \n */))) {
+            state = state && 3;
+        }
+        // Control characters are banned in TOML, so we throw an error if we encounter them
+        else if ((c < 0x20 && c !== 0x9 /* \t */) || c === 0x7f) {
+            error_TomlError.x('control characters are not allowed in strings', ctx);
+        }
+        // The string might terminate while we're parsing through a newline escape.
+        // It must have encountered a newline; otherwise, it'll simply fail in another branch.
+        else if ((!state || state === 3) && c === first && (!isMultiline || (ctx.s.charCodeAt(ctx.p + 1) === first && ctx.s.charCodeAt(ctx.p + 2) === first))) {
+            if (isMultiline) {
+                // If the string ends with 4-5 quotes, then the first 1-2 are part of the string
+                if (ctx.s.charCodeAt(ctx.p + 3) === first)
+                    ctx.p++;
+                if (ctx.s.charCodeAt(ctx.p + 3) === first)
+                    ctx.p++;
+            }
+            // If we're in a newline escape still, then there's nothing to add.
+            if (!state) {
+                // Avoid a useless concat operation if the string can be used as-is.
+                let s = ctx.s.slice(sliceStart, ctx.p);
+                parsed = parsed ? parsed + s : s;
+            }
+            ctx.p += isMultiline ? 3 : 1;
+            return parsed;
+        }
+        // Baseline state; keep moving forward unless an escape sequence starts
+        else if (!state) {
+            if (!isLiteral && c === 0x5c /* \ */) {
+                parsed += ctx.s.slice(sliceStart, (sliceStart = ctx.p));
+                state = 1;
+            }
+        }
+        else if (state === 1) {
+            if (c === 0x78 /* x */ || c === 0x75 /* u */ || c === 0x55 /* U */) { // Unicode escape
+                let errPtr = ctx.p++ - 1;
+                let value = 0;
+                let len = c === 0x78 /* x */ ? 2 : c === 0x75 /* u */ ? 4 : 8;
+                for (let j = 0; j < len; j++, ctx.p++) {
+                    let hex = ctx.s.charCodeAt(ctx.p);
+                    let digit = 
+                    /* 0-9 */ hex >= 0x30 && hex <= 0x39 ? hex - 0x30 :
+                        /* A-F */ hex >= 0x41 && hex <= 0x46 ? hex - 0x41 + 10 :
+                            /* a-f */ hex >= 0x61 && hex <= 0x66 ? hex - 0x61 + 10 : -1;
+                    if (digit < 0)
+                        error_TomlError.x('invalid non-hex character in unicode escape', ctx);
+                    value = (value << 4) | digit;
+                }
+                // Because JS does bitwise on signed 32bit integers, all 0xfzzzzzzz values are actually seen as negative
+                if (value < 0 || value > 0x10ffff || (value >= 0xd800 && value <= 0xdfff)) {
+                    error_TomlError.x('invalid unicode escape', ctx, errPtr);
+                }
+                parsed += String.fromCodePoint(value);
+                sliceStart = ctx.p--;
+                state = 0;
+            }
+            // Newline escape sequence. We only need to care about spaces and tabs; newlines are dealt with earlier
+            else if (isMultiline && (c === 0x20 || c === 0x9 /* \t */)) {
+                state = 2;
+            }
+            // Basic escape sequence
+            else {
+                if (c === 0x62 /* b */)
+                    parsed += '\b';
+                else if (c === 0x74 /* t */)
+                    parsed += '\t';
+                else if (c === 0x6e /* n */)
+                    parsed += '\n';
+                else if (c === 0x66 /* f */)
+                    parsed += '\f';
+                else if (c === 0x72 /* r */)
+                    parsed += '\r';
+                else if (c === 0x65 /* e */)
+                    parsed += '\x1b';
+                else if (c === 0x22 /* " */)
+                    parsed += '"';
+                else if (c === 0x5c /* \ */)
+                    parsed += '\\';
+                else
+                    error_TomlError.x('unrecognised escape sequence', ctx);
+                sliceStart = ctx.p + 1;
+                state = 0;
+            }
+        }
+        // Newline escape continuation: keep moving forward until the first non-whitespace char
+        else if (c !== 0x20 && c !== 0x9 /* \t */) {
+            if (state === 2)
+                error_TomlError.x('invalid escape: only line-ending whitespace may be escaped', ctx, sliceStart);
+            // State cannot be zero, or we'd have branched earlier already.
+            // If it's a backslash, immediately transition to the escape state so it can be processed.
+            state = !isLiteral && c === 0x5c /* \ */ ? 1 : 0;
+            sliceStart = ctx.p;
+        }
+    }
+    error_TomlError.x('unfinished string', ctx, startPtr);
+}
+
+/*!
+ * Copyright (c) Squirrel Chat et al., All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+let DATE_TIME_RE = /^(\d{4}-\d{2}-\d{2})?[Tt ]?(?:(\d{2}):\d{2}(?::\d{2}(?:\.\d+)?)?)?(Z|z|[-+]\d{2}:\d{2})?$/i;
+class date_TomlDate extends Date {
+    #hasDate = false;
+    #hasTime = false;
+    #offset = null;
+    constructor(date, fasttype, unsafeDelim) {
+        let hasDate = true;
+        let hasTime = true;
+        let offset = 'Z';
+        let c;
+        if (typeof date === 'string') {
+            if (fasttype)
+                prep: {
+                    // Date-time
+                    if (fasttype < 3) {
+                        if (+date.slice(11, 13) > 23) {
+                            date = '';
+                            break prep;
+                        }
+                        // Local
+                        if (fasttype === 2) {
+                            offset = null;
+                            date += 'Z';
+                        }
+                        // Offset; keep track of offset if not Z
+                        else if ((c = date.charCodeAt(date.length - 1)) !== 0x5a /* Z */ && c !== 0x7a /* z */) {
+                            offset = date.slice(date.length - 6);
+                        }
+                        if (unsafeDelim)
+                            date = date.slice(0, 10) + 'T' + date.slice(11);
+                    }
+                    // Time
+                    else if (fasttype === 4) {
+                        date = +date.slice(0, 2) > 23 ? '' : `0000-01-01T${date}Z`;
+                    }
+                    hasDate = fasttype !== 4;
+                    hasTime = fasttype !== 3;
+                }
+            else {
+                let match = date.match(DATE_TIME_RE);
+                if (match) {
+                    if (!match[1]) {
+                        hasDate = false;
+                        date = `0000-01-01T${date}`;
+                    }
+                    hasTime = !!match[2];
+                    // Make sure to use T instead of a space. Breaks in case of extreme values otherwise.
+                    hasTime && date[10] === ' ' && (date = date.replace(' ', 'T'));
+                    // Do not allow rollover hours.
+                    if (match[2] && +match[2] > 23) {
+                        date = '';
+                    }
+                    else {
+                        offset = match[3] || null;
+                        if (!offset && hasTime)
+                            date += 'Z';
+                    }
+                }
+                else {
+                    date = '';
+                }
+            }
+        }
+        super(date);
+        if (!isNaN(this.getTime())) {
+            this.#hasDate = hasDate;
+            this.#hasTime = hasTime;
+            this.#offset = offset;
+        }
+    }
+    isDateTime() {
+        return this.#hasDate && this.#hasTime;
+    }
+    isLocal() {
+        return !this.#hasDate || !this.#hasTime || !this.#offset;
+    }
+    isDate() {
+        return this.#hasDate && !this.#hasTime;
+    }
+    isTime() {
+        return this.#hasTime && !this.#hasDate;
+    }
+    isValid() {
+        return this.#hasDate || this.#hasTime;
+    }
+    toISOString() {
+        let iso = super.toISOString();
+        // Local Date
+        if (this.isDate())
+            return iso.slice(0, 10);
+        // Local Time
+        if (this.isTime())
+            return iso.slice(11, 23);
+        // Local DateTime
+        if (this.#offset === null)
+            return iso.slice(0, -1);
+        // Offset DateTime
+        if (this.#offset === 'Z' || this.#offset === 'z')
+            return iso;
+        // This part is quite annoying: JS strips the original timezone from the ISO string representation
+        // Instead of using a "modified" date and "Z", we restore the representation "as authored"
+        let offset = (+(this.#offset.slice(1, 3)) * 60) + +(this.#offset.slice(4, 6));
+        offset = this.#offset[0] === '-' ? offset : -offset;
+        let offsetDate = new Date(this.getTime() - (offset * 60e3));
+        return offsetDate.toISOString().slice(0, -1) + this.#offset;
+    }
+    static wrapAsOffsetDateTime(jsDate, offset = 'Z') {
+        let date = new date_TomlDate(jsDate);
+        date.#offset = offset;
+        return date;
+    }
+    static wrapAsLocalDateTime(jsDate) {
+        let date = new date_TomlDate(jsDate);
+        date.#offset = null;
+        return date;
+    }
+    static wrapAsLocalDate(jsDate) {
+        let date = new date_TomlDate(jsDate);
+        date.#hasTime = false;
+        date.#offset = null;
+        return date;
+    }
+    static wrapAsLocalTime(jsDate) {
+        let date = new date_TomlDate(jsDate);
+        date.#hasDate = false;
+        date.#offset = null;
+        return date;
+    }
+}
+
+/*!
+ * Copyright (c) Squirrel Chat et al., All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+
+
+
+function isDigit(char, base = 10) {
+    return base === 16
+        ? (char > 0x2f && char < 0x3a) || (char > 0x40 && char < 0x47) || (char > 0x60 && char < 0x67)
+        : (char > 0x2f && char < 0x30 + base);
+}
+function isEndOfValue(char, delim) {
+    // Whitespace -- we're permissive on `\r` for performance; it'll be dealt with later anyway
+    return char === 0x20 || char === 0x9 /* \t */ || char === 0xa /* \n */ || char === 0xd /* \r */ ||
+        // Structure end or next value delimiter
+        (delim && (char === delim || char === 0x2c /* , */)) ||
+        // Comment
+        char === 0x23; /* # */
+}
+/** @internal */
+function extractValue(ctx, end) {
+    let errPtr = ctx.p;
+    let c = ctx.s.charCodeAt(ctx.p);
+    // Structs
+    if (c === 0x5b /* [ */ || c === 0x7b /* { */) {
+        ctx.d-- || error_TomlError.x('document contains excessively nested structures. aborting.', ctx);
+        let value = c === 0x5b /* [ */
+            ? parseArray(ctx)
+            : parseInlineTable(ctx);
+        ctx.d++;
+        return value;
+    }
+    // Strings
+    if (c === 0x22 /* " */ || c === 0x27 /* ' */) {
+        return parseString(ctx);
+    }
+    // Booleans
+    // We can fast-path because the first character is enough to know the only possible value
+    if (c === 0x74 /* t */) { // Only possible valid value is `true`
+        if (ctx.s.charCodeAt(++ctx.p) !== 0x72 || ctx.s.charCodeAt(++ctx.p) !== 0x75 || ctx.s.charCodeAt(++ctx.p) !== 0x65)
+            error_TomlError.x('invalid value', ctx, errPtr);
+        return ctx.p++, true;
+    }
+    if (c === 0x66 /* f */) { // Only possible valid value is `false`
+        if (ctx.s.charCodeAt(++ctx.p) !== 0x61 || ctx.s.charCodeAt(++ctx.p) !== 0x6c || ctx.s.charCodeAt(++ctx.p) !== 0x73 || ctx.s.charCodeAt(++ctx.p) !== 0x65)
+            error_TomlError.x('invalid value', ctx, errPtr);
+        return ctx.p++, false;
+    }
+    if (c === 0x2b /* + */ || c === 0x2d /* - */) {
+        return parseNumber(ctx, ctx.p, ctx.s.charCodeAt(++ctx.p), 0x2c - c, end);
+    }
+    // Rough heuristic, but `parseDate` falls back to number parsing if it's a false positive.
+    // e.g.: `a = 1\n-------------- = 1` would match this heuristic, but gracefully fallback to numbers.
+    if (ctx.s.charCodeAt(ctx.p + 4) === 0x2d /* - */ && ctx.s.charCodeAt(ctx.p + 7) === 0x2d /* - */) {
+        return parseDate(ctx, c, end);
+    }
+    // Same logic as above; `parseTime` falls back to number parsing if it's a false positive.
+    if (ctx.s.charCodeAt(ctx.p + 2) === 0x3a /* : */) {
+        return parseTime(ctx, c, end);
+    }
+    return parseNumber(ctx, ctx.p, c, 0, end);
+}
+// State:
+// 0: init
+// 1: integer
+// 2: fractional dot
+// 3: fractional
+// 4: exponent letter
+// 5: exponent
+// 6: exponent sign
+// 7: exponent with sign
+// >9: underscore; see below
+//     -> 12: was integer
+//     -> 14: was fractional
+//     -> 16: was exponent
+// states 2-5, 14, 16 are ONLY permitted iif base === 10
+function parseNumber(ctx, startPtr, startChr, sign, endChr) {
+    let c = startChr;
+    let state = 0;
+    let hasUnderscores = false;
+    // (+/-)inf
+    if (c === 0x69 /* i */) {
+        if (ctx.s.charCodeAt(++ctx.p) !== 0x6e || ctx.s.charCodeAt(++ctx.p) !== 0x66)
+            error_TomlError.x('invalid value', ctx, startPtr);
+        return ctx.p++, (sign || 1) / 0;
+    }
+    // (+/-)nan
+    if (c === 0x6e /* n */) {
+        if (ctx.s.charCodeAt(++ctx.p) !== 0x61 || ctx.s.charCodeAt(++ctx.p) !== 0x6e)
+            error_TomlError.x('invalid value', ctx, startPtr);
+        return ctx.p++, NaN;
+    }
+    // Leading zero
+    // Only allowed cases: `0<EOV>`, `0.(...)`, `0e(...)`, `0x(...)`, `0b(...)`, `0o(...)`
+    // FWIW, `0e(...)` is a stupid case, but it's not banned per-se so we have to parse it
+    if (c === 0x30 /* 0 */) {
+        if (++ctx.p >= ctx.s.length || isEndOfValue(c = ctx.s.charCodeAt(ctx.p), endChr))
+            return ctx.bi === true ? 0n : 0; // note: conveniently deals with `-0`
+        if (!sign) {
+            if (c === 0x78 /* x */)
+                return parseIntegerBaseN(ctx, startPtr, 16, endChr);
+            else if (c === 0x62 /* b */)
+                return parseIntegerBaseN(ctx, startPtr, 2, endChr);
+            else if (c === 0x6f /* o */)
+                return parseIntegerBaseN(ctx, startPtr, 8, endChr);
+        }
+        if (c === 0x2e /* . */)
+            state = 2;
+        else if (c === 0x65 /* e */ || c === 0x45 /* E */)
+            state = 4;
+        else
+            error_TomlError.x('illegal leading zero', ctx, startPtr);
+    }
+    // If the 1st char is not a digit by now, then it's not a valid TOML value at all
+    else if (!isDigit(c))
+        error_TomlError.x('invalid value', ctx, startPtr);
+    while (++ctx.p < ctx.s.length && (c = ctx.s.charCodeAt(ctx.p), !isEndOfValue(c, endChr))) {
+        if (!state)
+            state = 1; // Detects single-digit numbers we can use a fast parse path for
+        // The way the states are numbered is not random: underscores are always permitted in odd-numbered states and
+        // never permitted in even-numbered ones.
+        if (c === 0x5f /* _ */) {
+            if (!(state & 1))
+                error_TomlError.x('illegal underscore', ctx);
+            state += 11; // 11 is a marker that makes the state even and greater than 9; see the numbering + rationale above
+            hasUnderscores = true;
+        }
+        // Transition to fractional part.
+        else if (state === 1 && c === 0x2e /* . */)
+            state = 2;
+        // Transition to exponent part.
+        else if ((state === 1 || state === 3) && (c === 0x65 /* e */ || c === 0x45 /* E */))
+            state = 4;
+        // + and - are permitted in state 4 only (handled before entering the function for state 0)
+        else if (state === 4 && (c === 0x2b /* + */ || c === 0x2d /* - */)) {
+            state = 6;
+        }
+        // All special cases have been handled; only digits are allowed here
+        else if (!isDigit(c))
+            error_TomlError.x(`illegal character in numeric literal`, ctx);
+        // Clear state flags
+        else if (state > 9)
+            state -= 11;
+        else if (!(state & 1))
+            state++;
+    }
+    // Single-char number; we can fast-path these very easily.
+    if (!state) {
+        let val = (startChr - 0x30 /* 0 */) * (sign || 1);
+        return ctx.bi === true ? BigInt(val) : val;
+    }
+    // Even-numbered states absolutely require a digit next; not even end of value is permitted
+    if (!(state & 1))
+        error_TomlError.x('unfinished numeric value', ctx, startPtr);
+    let str = ctx.s.slice(startPtr, ctx.p);
+    if (hasUnderscores)
+        str = str.replaceAll('_', ''); // perf: replaceAll 1.25x faster than replace with a regex
+    return state > 1
+        ? parseFloat(str)
+        : parseInteger(ctx, str, 10, startPtr);
+}
+function parseIntegerBaseN(ctx, startPtr, base, endChr) {
+    let c, underscore = 1;
+    while (++ctx.p < ctx.s.length && (c = ctx.s.charCodeAt(ctx.p), !isEndOfValue(c, endChr))) {
+        if (c === 0x5f /* _ */) {
+            if (underscore & 1)
+                error_TomlError.x('illegal underscore', ctx);
+            underscore = 3;
+        }
+        // We only need to check if the number is a valid digit, nothing else is permitted
+        else if (!isDigit(c, base))
+            error_TomlError.x(`illegal character in numeric literal`, ctx);
+        // Clear underscore flag
+        else if (underscore & 1)
+            underscore--;
+    }
+    // Trailing underscore is not allowed
+    if (underscore & 1)
+        error_TomlError.x('unfinished numeric value', ctx);
+    let str = ctx.s.slice(startPtr + 2, ctx.p);
+    if (underscore)
+        str = str.replaceAll('_', ''); // perf: replaceAll 1.25x faster than replace with a regex
+    return parseInteger(ctx, str, base, startPtr);
+}
+function parseInteger(ctx, str, base, startPtr) {
+    if (ctx.bi !== true)
+        int: {
+            let val = parseInt(str, base);
+            if (!Number.isSafeInteger(val)) {
+                if (ctx.bi)
+                    break int;
+                error_TomlError.x('integer value cannot be represented losslessly', ctx, startPtr);
+            }
+            return val;
+        }
+    return base === 10 ? BigInt(str) : BigInt((base === 2 ? '0b' : base === 8 ? '0o' : '0x') + str);
+}
+function parseDate(ctx, c, endChr) {
+    let startPtr = ctx.p++, unsafeSeparator;
+    if (!isDigit(c) ||
+        !isDigit(ctx.s.charCodeAt(ctx.p++)) ||
+        !isDigit(ctx.s.charCodeAt(ctx.p++)) ||
+        !isDigit(ctx.s.charCodeAt(ctx.p++))) {
+        return parseNumber(ctx, ctx.p = startPtr, c, 0, endChr);
+    }
+    ctx.p += 5;
+    if (!isDigit(ctx.s.charCodeAt(ctx.p++)))
+        error_TomlError.x('invalid date-time: date part is malformed', ctx, startPtr);
+    if (ctx.p >= ctx.s.length || (((c = ctx.s.charCodeAt(ctx.p)) !== 0x20 || (unsafeSeparator = true, !isDigit(ctx.s.charCodeAt(ctx.p + 1)))) && c !== 0x54 /* T */ && c !== 0x74 /* t */)) {
+        let t = ctx.s.slice(startPtr, ctx.p);
+        return readDate(ctx, t, 3, false, startPtr);
+    }
+    if (ctx.s.charCodeAt(ctx.p += 3) !== 0x3a /* : */)
+        error_TomlError.x('invalid date-time: time part is malformed', ctx, startPtr);
+    if (ctx.s.charCodeAt(ctx.p += 3) === 0x3a /* : */)
+        ctx.p += 3;
+    if (ctx.s.charCodeAt(ctx.p) === 0x2e /* . */)
+        while (isDigit(ctx.s.charCodeAt(++ctx.p)))
+            ;
+    if (c = ctx.s.charCodeAt(ctx.p)) {
+        if (c === 0x5a /* Z */ || c === 0x7a /* z */) {
+            let t = ctx.s.slice(startPtr, ++ctx.p);
+            return readDate(ctx, t, 1, unsafeSeparator, startPtr, '[+00:00]');
+        }
+        if (c === 0x2b /* + */ || c === 0x2d /* - */) {
+            // Temporal's ZonedDateTime is weird asf when it comes to dealing with traditional offsets...
+            // It's 1.2x faster to allocate a new string to pass to ZDT than use Instant.toZonedDateTimeISO
+            let t = ctx.s.slice(startPtr, ctx.p += 6);
+            return readDate(ctx, t, 1, unsafeSeparator, startPtr, !ctx.ld && ('[' + ctx.s.slice(ctx.p - 6, ctx.p) + ']'));
+        }
+    }
+    let t = ctx.s.slice(startPtr, ctx.p);
+    return readDate(ctx, t, 2, unsafeSeparator, startPtr);
+}
+function parseTime(ctx, c, endChr) {
+    let start = ctx.p;
+    if (!isDigit(c) || !isDigit(ctx.s.charCodeAt(++ctx.p))) {
+        return parseNumber(ctx, --ctx.p, c, 0, endChr);
+    }
+    if (ctx.s.charCodeAt(ctx.p += 4) === 0x3a /* : */)
+        ctx.p += 3;
+    if (ctx.s.charCodeAt(ctx.p) === 0x2e /* . */)
+        while (isDigit(ctx.s.charCodeAt(++ctx.p)))
+            ;
+    let t = ctx.s.slice(start, ctx.p);
+    return readDate(ctx, t, 4, false, start);
+}
+function readDate(ctx, str, type, unsafeDelim, errPtr, temporalSuffix) {
+    if (ctx.ld) {
+        let date = new date_TomlDate(str, type, unsafeDelim);
+        if (!date.isValid())
+            error_TomlError.x('invalid date', ctx, errPtr);
+        return date;
+    }
+    try {
+        if (temporalSuffix)
+            str += temporalSuffix;
+        switch (type) {
+            case 1: return Temporal.ZonedDateTime.from(str);
+            case 2: return Temporal.PlainDateTime.from(str);
+            case 3: return Temporal.PlainDate.from(str);
+            case 4: return Temporal.PlainTime.from(str);
+        }
+    }
+    catch (e) {
+        error_TomlError.x(e instanceof Error ? e.message : '' + e, ctx, errPtr);
+    }
+}
+
+/*!
+ * Copyright (c) Squirrel Chat et al., All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+/** @internal */
+function skipComment(ctx) {
+    for (; ctx.p < ctx.s.length; ctx.p++) {
+        let c = ctx.s.charCodeAt(ctx.p);
+        if (c === 0xa /* \n */)
+            break;
+        if (c === 0xd /* \r */ && ctx.s.charCodeAt(ctx.p + 1) === 0xa /* \n */) {
+            ctx.p++;
+            break;
+        }
+        if ((c < 0x20 && c !== 0x9 /* \t */) || c === 0x7f) {
+            error_TomlError.x('control characters are not allowed in comments', ctx);
+        }
+    }
+}
+/** @internal */
+function skipVoid(ctx, banNewLines, banComments) {
+    let c;
+    while (ctx.p < ctx.s.length) {
+        while (ctx.p < ctx.s.length && ((c = ctx.s.charCodeAt(ctx.p)) === 0x20 ||
+            c === 0x9 /* \t */ ||
+            (!banNewLines &&
+                (c === 0xa /* \n */ || (c === 0xd /* \r */ && ctx.s.charCodeAt(ctx.p + 1) === 0xa /* \n */)))))
+            ctx.p++;
+        if (banComments || c !== 0x23 /* # */)
+            break;
+        skipComment(ctx);
+    }
+}
+
+/*!
+ * Copyright (c) Squirrel Chat et al., All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+
+
+
+/** @internal */
+function parseKey(ctx, end = 0x3d /* = */) {
+    // States:
+    // 0: before first char
+    // 1: parsing bare key
+    // 2: after key component
+    let startPtr;
+    let state = 0;
+    let parsed = [];
+    let sliceStart;
+    let c = ctx.s.charCodeAt(startPtr = ctx.p);
+    do {
+        // End of key
+        if (c === end) {
+            if (!state)
+                error_TomlError.x('unexpected end of key', ctx);
+            if (state === 1)
+                parsed.push(ctx.s.slice(sliceStart, ctx.p));
+            return ctx.p++, parsed;
+        }
+        // Dotted key separator
+        else if (c === 0x2e /* . */) {
+            if (!state)
+                error_TomlError.x('illegal empty bare key', ctx);
+            if (state === 1)
+                parsed.push(ctx.s.slice(sliceStart, ctx.p));
+            state = 0;
+        }
+        // Quoted key
+        else if (!state && (c === 0x22 /* " */ || c === 0x27 /* ' */)) {
+            if (c === ctx.s.charCodeAt(ctx.p + 1) && c === ctx.s.charCodeAt(ctx.p + 2))
+                error_TomlError.x('illegal quoted key: multiline strings are not allowed', ctx);
+            parsed.push(parseString(ctx));
+            state = 2;
+            ctx.p--;
+        }
+        // Whitespace; no-op in state 0 and 2, end of bare key in state 1
+        else if (c === 0x20 || c === 0x9 /* \t */) {
+            if (state === 1) {
+                parsed.push(ctx.s.slice(sliceStart, ctx.p));
+                state = 2;
+            }
+        }
+        // If state is post-key, no character is allowed; otherwise ensure it's a bare-key component
+        else if (state === 2 || (c < 0x30 && c !== 0x2d /* - */) || (c > 0x39 && c < 0x41) || (c > 0x5a && c < 0x61 && c !== 0x5f /* _ */) || c > 0x7a) {
+            error_TomlError.x('illegal character in key', ctx);
+        }
+        // Illegal character
+        else if (!state) {
+            state = 1;
+            sliceStart = ctx.p;
+        }
+    } while (c = ctx.s.charCodeAt(++ctx.p));
+    error_TomlError.x('incomplete key-value: cannot find end of key', ctx, startPtr);
+}
+/** @internal */
+function parseInlineTable(ctx) {
+    let startPtr = ctx.p++;
+    let res = Object.create(null);
+    let seen = new Set();
+    let c;
+    while (ctx.p < ctx.s.length) {
+        skipVoid(ctx);
+        if ((c = ctx.s.charCodeAt(ctx.p)) === 0x7d /* } */) {
+            ctx.p++;
+            return res;
+        }
+        let k;
+        let t = res;
+        let hasOwn = false;
+        let errPtr = ctx.p;
+        let key = parseKey(ctx);
+        for (let i = 0; i < key.length; i++) {
+            if (i)
+                t = hasOwn ? t[k] : (t[k] = Object.create(null));
+            k = key[i];
+            if ((hasOwn = Object.hasOwn(t, k)) && (typeof t[k] !== 'object' || seen.has(t[k]))) {
+                error_TomlError.x('trying to redefine an already defined value', ctx, errPtr);
+            }
+            let unsafe = k === '__proto__';
+            if (ctx.uk && (unsafe || k === 'constructor')) {
+                t = ctx.uk !== 1 && error_TomlError.x('document contains an unsafe property', ctx, errPtr);
+                break;
+            }
+            if (!hasOwn && unsafe) {
+                Object.defineProperty(t, k, { enumerable: true, configurable: true, writable: true });
+            }
+        }
+        if (hasOwn) {
+            error_TomlError.x('trying to redefine an already defined value', ctx, errPtr);
+        }
+        skipVoid(ctx, true, true);
+        let value = extractValue(ctx, 0x7d /* } */);
+        if (t && typeof (t[k] = value) === 'object')
+            seen.add(value);
+        skipVoid(ctx);
+        if ((c = ctx.s.charCodeAt(ctx.p++)) === 0x7d /* } */) {
+            return res;
+        }
+        if (c !== 0x2c /* , */)
+            error_TomlError.x('expected comma or end of structure', ctx, ctx.p - 1);
+    }
+    error_TomlError.x('unfinished table', ctx, startPtr);
+}
+/** @internal */
+function parseArray(ctx) {
+    let startPtr = ctx.p++;
+    let res = [];
+    let c;
+    while (ctx.p < ctx.s.length) {
+        skipVoid(ctx);
+        if ((c = ctx.s.charCodeAt(ctx.p)) === 0x5d /* ] */) {
+            ctx.p++;
+            return res;
+        }
+        res.push(extractValue(ctx, 0x5d /* ] */));
+        skipVoid(ctx);
+        if ((c = ctx.s.charCodeAt(ctx.p++)) === 0x5d /* ] */) {
+            return res;
+        }
+        if (c !== 0x2c /* , */)
+            error_TomlError.x('expected comma or end of structure', ctx, ctx.p - 1);
+    }
+    error_TomlError.x('unfinished array', ctx, startPtr);
+}
+
+/*!
+ * Copyright (c) Squirrel Chat et al., All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+
+
+
+function peekTable(ctx, key, table, meta, type) {
+    let t = table;
+    let m = meta;
+    let k;
+    let hasOwn = false;
+    let state;
+    for (let i = 0; i < key.length; i++) {
+        if (i) {
+            t = hasOwn ? t[k] : (t[k] = Object.create(null));
+            m = (state = m[k]).c;
+            if (type === 0 /* Type.DOTTED */ && (state.t === 1 /* Type.EXPLICIT */ || state.t === 2 /* Type.ARRAY */)) {
+                return null;
+            }
+            if (state.t === 2 /* Type.ARRAY */) {
+                let l = t.length - 1;
+                t = t[l];
+                m = m[l].c;
+            }
+        }
+        k = key[i];
+        if ((hasOwn = Object.hasOwn(t, k)) && m[k]?.t === 0 /* Type.DOTTED */ && m[k]?.d) {
+            return null;
+        }
+        if (!hasOwn) {
+            let unsafe = k === '__proto__';
+            if (ctx.uk && (unsafe || k === 'constructor'))
+                return false;
+            if (unsafe) {
+                Object.defineProperty(t, k, { enumerable: true, configurable: true, writable: true });
+                Object.defineProperty(m, k, { enumerable: true, configurable: true, writable: true });
+            }
+            m[k] = {
+                t: i < key.length - 1 && type === 2 /* Type.ARRAY */
+                    ? 3 /* Type.ARRAY_DOTTED */ : type,
+                d: false,
+                i: 0,
+                c: Object.create(null),
+            };
+        }
+    }
+    state = m[k];
+    if (state.t !== type && !(type === 1 /* Type.EXPLICIT */ && state.t === 3 /* Type.ARRAY_DOTTED */)) {
+        // Bad key type!
+        return null;
+    }
+    if (type === 2 /* Type.ARRAY */) {
+        if (!state.d) {
+            state.d = true;
+            t[k] = [];
+        }
+        t[k].push(t = Object.create(null));
+        state.c[state.i++] = (state = { t: 1 /* Type.EXPLICIT */, d: false, i: 0, c: Object.create(null) });
+    }
+    if (state.d) {
+        // Redefining a table!
+        return null;
+    }
+    state.d = true;
+    if (type === 1 /* Type.EXPLICIT */) {
+        t = hasOwn ? t[k] : (t[k] = Object.create(null));
+    }
+    else if (type === 0 /* Type.DOTTED */ && hasOwn) {
+        return null;
+    }
+    return [k, t, state.c];
+}
+function validateTablePeek(ctx, peek, ptr) {
+    if (peek === null || ctx.uk === 2)
+        error_TomlError.x(peek === null
+            ? 'trying to redefine an already defined table or value'
+            : 'document contains an unsafe property', ctx, ptr);
+}
+function parse_parse(toml, options = {}) {
+    let ctx = {
+        s: toml,
+        p: 0,
+        d: options.maxDepth ?? 1000,
+        bi: options.integersAsBigInt ?? false,
+        ld: options.useLegacyDate ?? true,
+        uk: options.unsafeKeyBehaviour === 'throw' ? 2 : options.unsafeKeyBehaviour === 'drop' ? 1 : 0,
+    };
+    let res = Object.create(null);
+    let meta = Object.create(null);
+    let tmp;
+    let skipping = false;
+    let tbl = res;
+    let m = meta;
+    // BOM is allowed, skip.
+    // JS is UTF-16, so we have to check for the UTF-16 BOM instead of the UTF-8 BOM sequence!
+    if (toml.charCodeAt(0) === 0xfeff)
+        ctx.p++;
+    skipVoid(ctx);
+    while (ctx.p < toml.length) {
+        if (toml.charCodeAt(ctx.p) === 0x5b /* [ */) {
+            let isTableArray = toml.charCodeAt(++ctx.p) === 0x5b; /* [ */
+            tmp = ctx.p += +isTableArray;
+            skipping = false;
+            let k = parseKey(ctx, 0x5d /* ] */);
+            if (isTableArray) {
+                if (toml.charCodeAt(ctx.p) !== 0x5d /* ] */) {
+                    error_TomlError.x('expected end of table array declaration', ctx);
+                }
+                ctx.p++;
+            }
+            let p = peekTable(ctx, k, res, meta, isTableArray ? 2 /* Type.ARRAY */ : 1 /* Type.EXPLICIT */);
+            if (!p) {
+                validateTablePeek(ctx, p, tmp);
+                skipping = true;
+            }
+            else {
+                m = p[2];
+                tbl = p[1];
+            }
+        }
+        else {
+            tmp = ctx.p;
+            let k = parseKey(ctx);
+            let p = peekTable(ctx, k, tbl, m, 0 /* Type.DOTTED */);
+            if (!p && !skipping)
+                validateTablePeek(ctx, p, tmp);
+            skipVoid(ctx, true, true);
+            let v = extractValue(ctx, void 0);
+            if (p && !skipping)
+                p[1][p[0]] = v;
+        }
+        skipVoid(ctx, true);
+        if (ctx.p < toml.length && (tmp = toml.charCodeAt(ctx.p)) !== 0xa /* \n */ && (tmp !== 0xd /* \r */ || toml.charCodeAt(ctx.p + 1) !== 0xa /* \n */)) {
+            error_TomlError.x('each key-value declaration must be followed by an end-of-line', ctx);
+        }
+        skipVoid(ctx);
+    }
+    return res;
+}
+
+/*!
+ * Copyright (c) Squirrel Chat et al., All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+let BARE_KEY = /^[a-z0-9-_]+$/i;
+let HAS_WELLFORMED = !!(''.isWellFormed);
+function extendedTypeOf(obj) {
+    let type = typeof obj;
+    if (type === 'object') {
+        if (Array.isArray(obj))
+            return 'array';
+        if (typeof obj.getUTCDate === 'function' && obj instanceof Date)
+            return 'date';
+        if (globalThis.Temporal) {
+            if (obj.until) {
+                if (obj instanceof Temporal.ZonedDateTime)
+                    return 'temporal/tz+uc';
+                if (obj instanceof Temporal.PlainDateTime || obj instanceof Temporal.PlainDate)
+                    return 'temporal/uc';
+                if (obj instanceof Temporal.PlainTime || obj instanceof Temporal.Instant)
+                    return 'temporal';
+                if (obj instanceof Temporal.PlainYearMonth)
+                    return 'temporal/x';
+            }
+            else if ((obj.toPlainDate && obj instanceof Temporal.PlainMonthDay) ||
+                (obj.negated && obj instanceof Temporal.Duration)) {
+                return 'temporal/x';
+            }
+        }
+    }
+    return type;
+}
+function isArrayOfTables(obj) {
+    for (let i = 0; i < obj.length; i++) {
+        if (extendedTypeOf(obj[i]) !== 'object')
+            return false;
+    }
+    return obj.length != 0;
+}
+function formatWellFormedStringUnchecked(s) {
+    return JSON.stringify(s).replaceAll('\x7f', '\\u007f');
+}
+function formatString(s) {
+    return formatWellFormedStringUnchecked(HAS_WELLFORMED ? s.toWellFormed() : s);
+}
+function formatKey(s) {
+    if (BARE_KEY.test(s))
+        return s;
+    if (HAS_WELLFORMED && !s.isWellFormed())
+        throw new RangeError('key contains illegal lone surrogates');
+    return formatWellFormedStringUnchecked(s);
+}
+function stringifyValue(val, type, depth, numberAsFloat, strictTemporal) {
+    if (depth === 0) {
+        throw new Error('Could not stringify the object: maximum object depth exceeded');
+    }
+    switch (type) {
+        // @ts-expect-error -- intentional fallthrough case
+        case 'number':
+            if (isNaN(val))
+                return 'nan';
+            if (val === Infinity)
+                return 'inf';
+            if (val === -Infinity)
+                return '-inf';
+            if (Number.isInteger(val) && (numberAsFloat || !Number.isSafeInteger(val)))
+                return val.toFixed(1);
+        case 'bigint':
+        case 'boolean':
+        case 'temporal':
+            return val.toString();
+        case 'string':
+            return formatString(val);
+        case 'date':
+            if (isNaN(val.getTime()))
+                throw new TypeError('cannot serialize invalid date');
+            return val.toISOString();
+        case 'object':
+            return stringifyInlineTable(val, depth, numberAsFloat, strictTemporal);
+        case 'array':
+            return stringifyArray(val, depth, numberAsFloat, strictTemporal);
+        // @ts-expect-error -- intentional fallthrough case
+        case 'temporal/tz+uc':
+            if (strictTemporal) {
+                let tz = val.timeZoneId;
+                let tzc = tz.charCodeAt(0);
+                if (
+                // Classic offset
+                tzc !== 0x2b /* + */ && tzc !== 0x2d /* - */ &&
+                    (
+                    // Fast pre-check pass; see below for the actually accepted values
+                    (tzc !== 0x55 /* U */ && tzc !== 0x47 /* G */ && tzc !== 0x5a /* Z */ && tzc !== 0x45 /* E */) ||
+                        (
+                        // UTC and its aliases; Temporal implementations don't all canonicalise unfortunately
+                        tz !== 'UTC' && tz !== 'UCT' && tz !== 'Universal' && tz !== 'Zulu' &&
+                            // GMT is a TZ but it's for all intents and purposes equivalent to UTC. Safe to downgrade.
+                            !tz.startsWith('GMT') && tz !== 'Greenwich' &&
+                            // Etc/* are all safe to downgrade to offset (either UTC, GMT, or offset)
+                            !tz.startsWith('Etc/')))) {
+                    throw new TypeError('Temporal objects with an IANA timezone are not allowed in Temporal strict mode');
+                }
+            }
+        case 'temporal/uc':
+            if (strictTemporal && val.calendarId !== 'iso8601')
+                throw new TypeError('Temporal objects with a non-default calendar are not allowed in Temporal strict mode');
+            return val.toString({
+                calendarName: 'never',
+                timeZoneName: 'never',
+            });
+        case 'temporal/x':
+            throw new TypeError('Unsupported ' + val[Symbol.toStringTag]);
+    }
+}
+function stringifyInlineTable(obj, depth, numberAsFloat, strictTemporal) {
+    let keys = Object.keys(obj);
+    if (keys.length === 0)
+        return '{}';
+    let res = '{ ';
+    for (let i = 0; i < keys.length; i++) {
+        let k = keys[i];
+        if (i)
+            res += ', ';
+        res += formatKey(k) + ' = ' + stringifyValue(obj[k], extendedTypeOf(obj[k]), depth - 1, numberAsFloat, strictTemporal);
+    }
+    return res + ' }';
+}
+function stringifyArray(array, depth, numberAsFloat, strictTemporal) {
+    if (array.length === 0)
+        return '[]';
+    let res = '[ ';
+    for (let i = 0; i < array.length; i++) {
+        if (i)
+            res += ', ';
+        if (array[i] === null || array[i] === void 0) {
+            throw new TypeError('arrays cannot contain null or undefined values');
+        }
+        res += stringifyValue(array[i], extendedTypeOf(array[i]), depth - 1, numberAsFloat, strictTemporal);
+    }
+    return res + ' ]';
+}
+function stringifyArrayTable(array, key, depth, numberAsFloat, strictTemporal) {
+    if (depth === 0) {
+        throw new Error('Could not stringify the object: maximum object depth exceeded');
+    }
+    let res = '';
+    for (let i = 0; i < array.length; i++) {
+        res += `${res && '\n'}[[${key}]]\n`;
+        res += stringifyTable(0, array[i], key, depth, numberAsFloat, strictTemporal);
+    }
+    return res;
+}
+function stringifyTable(tableKey, obj, prefix, depth, numberAsFloat, strictTemporal) {
+    if (depth === 0) {
+        throw new Error('Could not stringify the object: maximum object depth exceeded');
+    }
+    let preamble = '';
+    let tables = '';
+    let keys = Object.keys(obj);
+    for (let i = 0; i < keys.length; i++) {
+        let k = keys[i];
+        if (obj[k] !== null && obj[k] !== void 0) {
+            let type = extendedTypeOf(obj[k]);
+            if (type === 'symbol' || type === 'function') {
+                throw new TypeError(`cannot serialize values of type '${type}'`);
+            }
+            let key = formatKey(k);
+            if (type === 'array' && isArrayOfTables(obj[k])) {
+                tables += (tables && '\n') + stringifyArrayTable(obj[k], prefix ? `${prefix}.${key}` : key, depth - 1, numberAsFloat, strictTemporal);
+            }
+            else if (type === 'object') {
+                let tblKey = prefix ? `${prefix}.${key}` : key;
+                tables += (tables && '\n') + stringifyTable(tblKey, obj[k], tblKey, depth - 1, numberAsFloat, strictTemporal);
+            }
+            else {
+                preamble += key;
+                preamble += ' = ';
+                preamble += stringifyValue(obj[k], type, depth, numberAsFloat, strictTemporal);
+                preamble += '\n';
+            }
+        }
+    }
+    if (tableKey && (preamble || !tables)) // Create table only if necessary
+        preamble = preamble ? `[${tableKey}]\n${preamble}` : `[${tableKey}]`;
+    return preamble && tables
+        ? `${preamble}\n${tables}`
+        : preamble || tables;
+}
+function stringify_stringify(obj, { maxDepth = 1000, numbersAsFloat = false, strictTemporal = false } = {}) {
+    if (extendedTypeOf(obj) !== 'object') {
+        throw new TypeError('stringify can only be called with an object');
+    }
+    let str = stringifyTable(0, obj, '', maxDepth, numbersAsFloat, strictTemporal);
+    if (str[str.length - 1] !== '\n')
+        return str + '\n';
+    return str;
+}
+
+/*!
+ * Copyright (c) Squirrel Chat et al., All rights reserved.
+ * SPDX-License-Identifier: BSD-3-Clause
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the
+ *    documentation and/or other materials provided with the distribution.
+ * 3. Neither the name of the copyright holder nor the names of its contributors
+ *    may be used to endorse or promote products derived from this software without
+ *    specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
+
+
+
+
+/** @deprecated use `import * as ... from 'smol-toml'` instead */
+/* export default */ const dist = ((/* unused pure expression or super */ null && ({ parse, stringify, TomlDate, TomlError })));
+
+const dist_0 = __webpack_require__("./node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/dist/index.js");
+// Finds the devlanes version a project pins when the `version` input is empty, so CI installs
+// the one its developers run. Only lockfiles and exact versions count: turning a range into a
+// version would need the release list, and could pick another one than the project installs.
+
+
+
+
+const dependencyGroups = [
+    'dependencies',
+    'devDependencies',
+    'optionalDependencies'
+];
+/** `value` as an object, or undefined when it is not one. */ function record(value) {
+    return typeof value === 'object' && value !== null && !Array.isArray(value) ? value : undefined;
+}
+/** `folder` and each folder above it up to `.`, nearest first, as `/`-separated paths. */ function ancestors(folder) {
+    const parts = folder === '.' ? [] : folder.split('/');
+    const result = [];
+    for(let length = parts.length; length > 0; length--){
+        result.push(parts.slice(0, length).join('/'));
+    }
+    result.push('.');
+    return result;
+}
+/**
+ * The version in a pnpm v9 `pnpm-lock.yaml`, from the importer of `folder` or the nearest one
+ * above it, since Node resolves `devlanes` from parent folders too.
+ */ function pnpmLock(contents, folder) {
+    // pnpm can write the lockfile of its own installation (`packageManagerDependencies`) as a
+    // YAML document before the project's, as this repository's pnpm-lock.yaml shows.
+    for (const document of (0,dist_0.hR)(contents)){
+        const [error] = document.errors;
+        if (error) throw error;
+        const importers = record(record(document.toJS())?.importers);
+        if (!importers) continue;
+        for (const path of ancestors(folder)){
+            const importer = record(importers[path]);
+            for (const group of dependencyGroups){
+                const entry = record(importer?.[group])?.devlanes;
+                if (entry === undefined) continue;
+                // Lockfiles before v6 hold the version itself instead of `{ specifier, version }`.
+                const version = typeof entry === 'string' ? entry : record(entry)?.version;
+                if (typeof version !== 'string') throw new Error('devlanes has no version');
+                // Packages with peer dependencies carry them after the version, as `0.7.2(react@19.0.0)`.
+                return version.split('(')[0] ?? '';
+            }
+        }
+    }
+    return null;
+}
+/** The version in an npm v2/v3 `package-lock.json` or `npm-shrinkwrap.json`. */ function npmLock(contents, folder) {
+    const packages = record(record(JSON.parse(contents))?.packages);
+    if (!packages) return null;
+    // npm hoists to the root `node_modules`, but keeps a conflicting version in the workspace's own.
+    for (const path of ancestors(folder)){
+        const key = path === '.' ? 'node_modules/devlanes' : `${path}/node_modules/devlanes`;
+        const entry = packages[key];
+        if (entry === undefined) continue;
+        const version = record(entry)?.version;
+        if (typeof version !== 'string') throw new Error('devlanes has no version');
+        return version;
+    }
+    return null;
+}
+/**
+ * The version in a `yarn.lock`, classic (`devlanes@^0.7.0:` and `version "0.7.2"`) or berry
+ * (`"devlanes@npm:^0.7.0":` and `version: 0.7.2`).
+ */ function yarnLock(contents) {
+    let inBlock = false;
+    for (const line of contents.split(/\r?\n/)){
+        if (/^\S/.test(line)) {
+            if (inBlock) throw new Error('devlanes has no version');
+            inBlock = /^"?devlanes@/.test(line);
+            continue;
+        }
+        if (!inBlock) continue;
+        // Two spaces: deeper lines belong to the block's dependencies, where one could be `version`.
+        const match = /^ {2}version:?\s+"?([^"\s]+)"?\s*$/.exec(line);
+        if (match?.[1]) return match[1];
+    }
+    if (inBlock) throw new Error('devlanes has no version');
+    return null;
+}
+/** The version in a text `bun.lock`, whose `packages.devlanes[0]` reads `devlanes@X.Y.Z`. */ function bunLock(contents) {
+    // bun.lock is JSON with trailing commas, which JSON.parse refuses.
+    const json = contents.replace(/,(\s*[}\]])/g, '$1');
+    const entry = record(record(JSON.parse(json))?.packages)?.devlanes;
+    if (entry === undefined) return null;
+    const id = Array.isArray(entry) ? entry[0] : undefined;
+    if (typeof id !== 'string' || !id.startsWith('devlanes@')) {
+        throw new Error('devlanes has no version');
+    }
+    return id.slice('devlanes@'.length);
+}
+/** The version in a `uv.lock` or `poetry.lock`, mapped from PEP 440 to the release's. */ function pythonLock(contents) {
+    const packages = parse_parse(contents).package;
+    if (!Array.isArray(packages)) return null;
+    for (const entry of packages){
+        if (record(entry)?.name !== 'devlanes') continue;
+        const version = record(entry)?.version;
+        if (typeof version !== 'string') throw new Error('devlanes has no version');
+        return fromPep440(version);
+    }
+    return null;
+}
+/**
+ * A PyPI version as the release it was built from, inverting `pep440` in devlanes'
+ * packaging/pypi/build.py: `0.8.0rc1` is `0.8.0-rc.1`, and `rc0` is a bare `-rc`.
+ * Anything else comes back unchanged and fails the version check.
+ */ function fromPep440(version) {
+    const match = /^(\d+\.\d+\.\d+)(?:(a|b|rc)(\d+))?$/.exec(version);
+    if (!match) return version;
+    const [, release, label, number] = match;
+    if (!label) return release ?? version;
+    const name = label === 'a' ? 'alpha' : label === 'b' ? 'beta' : 'rc';
+    return Number(number) === 0 ? `${release}-${name}` : `${release}-${name}.${Number(number)}`;
+}
+/** An exact version in a `package.json`'s dependencies; a range returns null. */ function packageJson(contents) {
+    const manifest = record(JSON.parse(contents));
+    for (const group of dependencyGroups){
+        const value = record(manifest?.[group])?.devlanes;
+        if (typeof value !== 'string') continue;
+        const match = /^[=v]?(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/.exec(value.trim());
+        if (match?.[1]) return match[1];
+    }
+    return null;
+}
+/**
+ * The files searched in each folder, in order; the first that names devlanes wins. `bun.lockb`
+ * is binary and not read.
+ */ const sources = [
+    [
+        'pnpm-lock.yaml',
+        pnpmLock
+    ],
+    [
+        'package-lock.json',
+        npmLock
+    ],
+    [
+        'npm-shrinkwrap.json',
+        npmLock
+    ],
+    [
+        'yarn.lock',
+        yarnLock
+    ],
+    [
+        'bun.lock',
+        bunLock
+    ],
+    [
+        'uv.lock',
+        pythonLock
+    ],
+    [
+        'poetry.lock',
+        pythonLock
+    ],
+    [
+        'package.json',
+        packageJson
+    ]
+];
+/** `start` and each folder above it up to `workspace`, or only `start` when it is outside. */ function searchFolders(start, workspace) {
+    const root = external_node_path_resolve(workspace);
+    const folders = [];
+    for(let dir = external_node_path_resolve(start);; dir = dirname(dir)){
+        folders.push(dir);
+        const below = relative(root, dir);
+        if (!below || below === '..' || below.startsWith(`..${sep}`) || isAbsolute(below)) break;
+    }
+    return folders;
+}
+/** A path as `/`-separated text, the form the log and the `version-source` output use. */ function slashes(path) {
+    return path.split(sep).join('/');
+}
+/**
+ * The version pinned by the nearest file that names devlanes, or null when none does. A file
+ * that cannot be parsed or names something other than a release is skipped with a warning; a
+ * version older than the action supports throws.
+ */ function pinnedVersion(search) {
+    const start = external_node_path_resolve(search.start);
+    for (const dir of searchFolders(start, search.workspace)){
+        const folder = slashes(relative(dir, start)) || '.';
+        for (const [name, read] of sources){
+            const path = join(dir, name);
+            if (!search.exists(path)) continue;
+            const source = slashes(relative(external_node_path_resolve(search.workspace), path));
+            let found;
+            try {
+                found = read(search.readFile(path), folder);
+            } catch (error) {
+                search.warn(`Could not read the devlanes version from ${source}: ${detect_message(error)}`);
+                continue;
+            }
+            if (found === null) continue;
+            const version = found.trim().toLowerCase();
+            if (!releasePattern.test(version)) {
+                search.warn(`${source} names devlanes ${found}, which is not a release version; skipping it`);
+                continue;
+            }
+            if (compareVersions(version, (/* inlined export .minimumVersion */"0.7.0")) < 0) {
+                throw new Error(`${source} pins devlanes ${version}, which is too old for this action; use ${(/* inlined export .minimumVersion */"0.7.0")} or later or set version`);
+            }
+            return {
+                version,
+                source
+            };
+        }
+    }
+    return null;
+}
+/** The version to install: the input when set, else the one the project pins, else the default. */ function resolveVersion(input, search) {
+    if (input) return {
+        version: input,
+        source: 'input'
+    };
+    return pinnedVersion(search) ?? {
+        version: (/* inlined export .defaultVersion */"0.7.0"),
+        source: 'default'
+    };
+}
+/** The log line that says which version is installed and why. */ function versionMessage(resolved) {
+    if (resolved.source === 'input') {
+        return `Installing devlanes ${resolved.version} from the version input`;
+    }
+    if (resolved.source === 'default') {
+        return `Installing devlanes ${resolved.version}, the action's default (no lockfile names devlanes)`;
+    }
+    return `Installing devlanes ${resolved.version} from ${resolved.source}`;
+}
+/** The text of an error. */ function detect_message(error) {
+    return error instanceof Error ? error.message : String(error);
 }
 
 
@@ -11987,7 +13532,6 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
 
 
 
-const dist = __webpack_require__("./node_modules/.pnpm/yaml@2.9.1/node_modules/yaml/dist/index.js");
 // Prepares the runner before the daemon starts: user config and the proxy's ports, which the
 // daemon reads only when it starts, and on Linux trust in the devlanes CA.
 
@@ -12022,7 +13566,7 @@ const dist = __webpack_require__("./node_modules/.pnpm/yaml@2.9.1/node_modules/y
  * like `true`, a number, a `*` alias or a `# comment`, and a value never starts with `-`.
  */ function flattenConfig(text) {
     if (!text.trim()) return [];
-    const document = (0,dist.qg)(text);
+    const document = (0,dist_0.qg)(text);
     if (!isMapping(document)) throw new Error('Input "config" must be a YAML mapping');
     const changes = [];
     const visit = (value, path)=>{
@@ -12284,16 +13828,27 @@ const dist = __webpack_require__("./node_modules/.pnpm/yaml@2.9.1/node_modules/y
 
 
 
+
+
 /** Runs the main step. */ async function main() {
     const inputs = readInputs((name)=>getInput(name), process.platform);
-    const installed = await core_group(`Install devlanes ${inputs.version}`, ()=>install_install(inputs.version));
     const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
+    const cwd = external_node_path_resolve(workspace, inputs.workingDirectory);
+    const resolved = resolveVersion(inputs.version, {
+        start: cwd,
+        workspace,
+        exists: existsSync,
+        readFile: (path)=>readFileSync(path, 'utf8'),
+        warn: (text)=>core_warning(text)
+    });
+    core_info(versionMessage(resolved));
+    setOutput('version-source', resolved.source);
+    const installed = await core_group(`Install devlanes ${resolved.version}`, ()=>install_install(resolved.version));
     // devlanes reads DEVLANES_HOME relative to each process's directory, and the action runs
     // devlanes from more than one, so a relative input is made absolute once here.
     const home = inputs.home ? external_node_path_resolve(workspace, inputs.home) : '';
     // Later `run: devlanes ...` steps must reach the same daemon, which is keyed by the home.
     if (home) exportVariable('DEVLANES_HOME', home);
-    const cwd = external_node_path_resolve(workspace, inputs.workingDirectory);
     const devlanes = ()=>cli(installed.bin, childEnv(process.env, home));
     const printed = (await devlanes().run([
         '--version'
@@ -12351,7 +13906,7 @@ const dist = __webpack_require__("./node_modules/.pnpm/yaml@2.9.1/node_modules/y
     setOutput('logs-dir', state.logsDir);
     state_saveState(state);
     if (state.lane) await laneHosts(devlanes(), inputs, state, cwd);
-    if (inputs.command === 'start') await start(devlanes(), inputs, state);
+    if (inputs.command === 'start') await main_start(devlanes(), inputs, state);
     else await withCommand(devlanes(), inputs, state);
 }
 /**
@@ -12420,7 +13975,7 @@ const dist = __webpack_require__("./node_modules/.pnpm/yaml@2.9.1/node_modules/y
         await addHosts(platform, hostsPath(platform, process.env), state.lane, hosts);
         core_info(`Added ${hosts.join(', ')} to the hosts file`);
     } catch (error) {
-        core_warning(`Could not add the lane's hostnames to the hosts file, which needs an elevated runner on Windows and passwordless sudo on macOS: ${message(error)}`);
+        core_warning(`Could not add the lane's hostnames to the hosts file, which needs an elevated runner on Windows and passwordless sudo on macOS: ${main_message(error)}`);
     }
 }
 /** `--timeout` and `--profile` flags from the inputs. */ function startFlags(inputs) {
@@ -12444,7 +13999,7 @@ const dist = __webpack_require__("./node_modules/.pnpm/yaml@2.9.1/node_modules/y
             cwd
         });
     } catch (error) {
-        core_warning(`Could not read the lane: ${message(error)}`);
+        core_warning(`Could not read the lane: ${main_message(error)}`);
         return null;
     }
 }
@@ -12458,11 +14013,11 @@ const dist = __webpack_require__("./node_modules/.pnpm/yaml@2.9.1/node_modules/y
         });
         return page.items.find((item)=>item.reference === lane) ?? page.items[0];
     } catch (error) {
-        core_warning(`Could not read the lane's status: ${message(error)}`);
+        core_warning(`Could not read the lane's status: ${main_message(error)}`);
         return undefined;
     }
 }
-/** `command: start`: start the lane, then publish its URLs, ports and environment. */ async function start(devlanes, inputs, state) {
+/** `command: start`: start the lane, then publish its URLs, ports and environment. */ async function main_start(devlanes, inputs, state) {
     const result = await devlanes.run([
         'start',
         '--no-ui',
@@ -12498,7 +14053,7 @@ const dist = __webpack_require__("./node_modules/.pnpm/yaml@2.9.1/node_modules/y
             }));
             setOutput('https-port', port === null ? '' : String(port));
         } catch (error) {
-            core_warning(`Could not read the proxy's port: ${message(error)}`);
+            core_warning(`Could not read the proxy's port: ${main_message(error)}`);
         }
     }
     if (result.code !== 0) {
@@ -12567,9 +14122,9 @@ const dist = __webpack_require__("./node_modules/.pnpm/yaml@2.9.1/node_modules/y
     exportVariable(stoppedVariable, stopped.join('\n'));
     if (result.code !== 0) setFailed(`devlanes stop exited ${result.code}`);
 }
-/** The text of an error. */ function message(error) {
+/** The text of an error. */ function main_message(error) {
     return error instanceof Error ? error.message : String(error);
 }
-main().catch((error)=>setFailed(message(error)));
+main().catch((error)=>setFailed(main_message(error)));
 
 export {};

@@ -1,10 +1,12 @@
 // The action's main step: install devlanes, prepare the runner once per job, then start a lane,
 // run a command against it, or stop it.
 
+import { existsSync, readFileSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import * as core from '@actions/core';
 import { caFiles, caVariables } from './ca.ts';
+import { resolveVersion, versionMessage } from './detect.ts';
 import { cli, type Devlanes } from './devlanes.ts';
 import { childEnv } from './env.ts';
 import { addHosts, hostsPath, laneHostnames, resolvesToLoopback } from './hosts.ts';
@@ -38,17 +40,27 @@ import { readyVariable, type State, saveState, stoppedLanes, stoppedVariable } f
 /** Runs the main step. */
 async function main(): Promise<void> {
   const inputs = readInputs((name) => core.getInput(name), process.platform);
-  const installed = await core.group(`Install devlanes ${inputs.version}`, () =>
-    install(inputs.version)
+  const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
+  const cwd = resolve(workspace, inputs.workingDirectory);
+
+  const resolved = resolveVersion(inputs.version, {
+    start: cwd,
+    workspace,
+    exists: existsSync,
+    readFile: (path) => readFileSync(path, 'utf8'),
+    warn: (text) => core.warning(text)
+  });
+  core.info(versionMessage(resolved));
+  core.setOutput('version-source', resolved.source);
+  const installed = await core.group(`Install devlanes ${resolved.version}`, () =>
+    install(resolved.version)
   );
 
-  const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
   // devlanes reads DEVLANES_HOME relative to each process's directory, and the action runs
   // devlanes from more than one, so a relative input is made absolute once here.
   const home = inputs.home ? resolve(workspace, inputs.home) : '';
   // Later `run: devlanes ...` steps must reach the same daemon, which is keyed by the home.
   if (home) core.exportVariable('DEVLANES_HOME', home);
-  const cwd = resolve(workspace, inputs.workingDirectory);
   const devlanes = () => cli(installed.bin, childEnv(process.env, home));
 
   const printed = (await devlanes().run(['--version'])).stdout.trim();
