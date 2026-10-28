@@ -197,10 +197,12 @@ jobs:
           exit 1
 
   failed-test:
-    name: Failed test step
+    name: "Expected failure: test step"
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # The failing step is the point; the artifacts job checks that its logs were uploaded.
+    # The failing step is the point; the artifacts job checks that its logs were uploaded. Its
+    # red X cannot be avoided: with continue-on-error on the step instead, the API reports the
+    # step as a success and the action rightly uploads nothing.
     continue-on-error: true
     steps:
       - name: Checkout
@@ -472,5 +474,35 @@ jobs:
           with=(artifacts/devlanes-logs-with-on-*)
           if [ ${#start[@]} -ne 5 ] || [ ${#with[@]} -ne 0 ]; then
             echo "::error::expected 5 start and 0 with artifacts: ${start[*]} ${with[*]}"
+            exit 1
+          fi
+
+  # The one check branch rules require. It runs even when a job failed or was cancelled, since
+  # a required check that is skipped counts as passed. failed-test fails on purpose and is left
+  # out; artifacts needs it and checks that it did its job.
+  gate:
+    name: CI passed
+    if: ${{ always() }}
+    needs:
+      - checks
+      - e2e
+      - infra
+      - failure
+      - quiet
+      - two-lanes
+      - install
+      - failed-script
+      - unnamed
+      - artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check every job passed
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          failed=$(jq -r '[to_entries[] | select(.value.result != "success") | "\(.key) \(.value.result)"] | join(", ")' <<< "$NEEDS")
+          if [ -n "$failed" ]; then
+            echo "::error::these jobs did not pass: $failed"
             exit 1
           fi
