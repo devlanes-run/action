@@ -10,7 +10,7 @@ Runs a project's [devlanes](https://devlanes.run) lane in GitHub Actions: its co
 - run: pnpm test:e2e
 ```
 
-Tests read their base URLs from `DEVLANES_PUBLIC_URL_<SERVICE>`, such as `DEVLANES_PUBLIC_URL_WEB=https://web.acme.localhost`, and trust the HTTPS proxy's certificates through `NODE_EXTRA_CA_CERTS` and the other CA variables the action sets. The [devlanes docs](https://devlanes.run/docs) cover `devlanes.yaml`, profiles, infra and the CLI. The action needs devlanes 0.10.0 or later.
+Tests read their base URLs from `DEVLANES_PUBLIC_URL_<SERVICE>`, such as `DEVLANES_PUBLIC_URL_WEB=https://web.acme.localhost`, and trust the HTTPS proxy's certificates through `NODE_EXTRA_CA_CERTS` and the other CA variables the action sets. The [devlanes docs](https://devlanes.run/docs) cover `devlanes.yaml`, profiles, infra and the CLI. The action needs devlanes 0.11.0 or later.
 
 ## Commands
 
@@ -30,7 +30,7 @@ While the lane starts, the log shows devlanes' own output: a collapsible group p
 
 | Input | Default | Description |
 | --- | --- | --- |
-| `version` | from the lockfile, else `0.10.0` | devlanes version: `latest`, `next` (the newest build of devlanes' main branch) or a release of 0.10.0 or later. Empty reads the version from the project's lockfile, else uses 0.10.0, the release this version of the action was tested with. See [Choosing the devlanes version](#choosing-the-devlanes-version). |
+| `version` | from the lockfile, else `0.11.0` | devlanes version: `latest`, `next` (the newest build of devlanes' main branch) or a release of 0.11.0 or later. Empty reads the version from the project's lockfile, else uses 0.11.0, the release this version of the action was tested with. See [Choosing the devlanes version](#choosing-the-devlanes-version). |
 | `command` | `start` | `start`, `with`, `stop` or `install`. |
 | `run` | | Script for `command: with`. It runs in `working-directory` with the lane's environment. |
 | `shell` | `bash`, `pwsh` on Windows | Shell for `run`: `bash`, `sh`, `pwsh`, `powershell` or `cmd`, with the flags GitHub uses for `run:` steps. `bash` on Windows is Git Bash. |
@@ -43,7 +43,7 @@ While the lane starts, the log shows devlanes' own output: a collapsible group p
 | `trust` | `true` | On Linux, run `devlanes setup` to trust the devlanes CA in the system store and in the NSS store that Chromium reads. See [HTTPS](#https). |
 | `hosts-file` | `auto` | Hosts file entries for the lane's hostnames: `auto`, `true` or `false`. See [Hostnames](#hostnames). |
 | `low-ports` | `true` | On Linux, let the proxy listen on 443 and 80, so public URLs carry no port. |
-| `export-env` | `true` | With `command: start`, give later steps the lane's variables: `DEVLANES_PUBLIC_URL_<SERVICE>`, `DEVLANES_PROJECT`, `DEVLANES_LANE` and the rest. |
+| `export-env` | `true` | With `command: start`, give later steps the lane's variables: `DEVLANES_PUBLIC_URL_<SERVICE>`, `DEVLANES_LANE_PROJECT`, `DEVLANES_LANE` and the rest. |
 | `export-ca` | `true` | Set `NODE_EXTRA_CA_CERTS`, `DENO_CERT`, `SSL_CERT_FILE` and `REQUESTS_CA_BUNDLE` for later steps and the `with` script. |
 | `upload-logs` | `on-failure` | When the logs are uploaded as an artifact: `on-failure`, `always` (or `true`) or `never` (or `false`). See [Logs](#logs). |
 | `artifact-name` | `devlanes-logs-<job name>-<lane>` | Name of the logs artifact. The default, such as `devlanes-logs-e2e-ubuntu-latest-acme-0`, differs between the jobs of a matrix and between projects in one job. When the API cannot name the job, the runner's name takes its place. |
@@ -254,16 +254,16 @@ A home under `runner.temp` keeps each job's lanes and ports apart from the previ
 A project that has devlanes as a dependency does not need `version`: the action installs the version its lockfile resolved, the same one the developers run.
 
 ```yaml
-# package.json has "devlanes": "^0.10.0" and pnpm-lock.yaml resolved it to 0.10.2
-- uses: devlanes-run/action@v0   # installs 0.10.2
+# package.json has "devlanes": "^0.11.0" and pnpm-lock.yaml resolved it to 0.11.2
+- uses: devlanes-run/action@v0   # installs 0.11.2
 ```
 
 The first of these that names a version wins:
 
-1. The `version` input: `latest`, `next` or a release such as `0.10.0`.
+1. The `version` input: `latest`, `next` or a release such as `0.11.0`.
 2. A lockfile that names devlanes.
-3. An exact version of devlanes in `package.json` (`dependencies`, `devDependencies` or `optionalDependencies`), such as `0.10.2`. Ranges such as `^0.10.0` are ignored.
-4. 0.10.0, the release this version of the action was tested with.
+3. An exact version of devlanes in `package.json` (`dependencies`, `devDependencies` or `optionalDependencies`), such as `0.11.2`. Ranges such as `^0.11.0` are ignored.
+4. 0.11.0, the release this version of the action was tested with.
 
 The action looks in `working-directory`, then in each folder above it up to the workspace, and in each folder reads these files in this order:
 
@@ -276,14 +276,14 @@ The action looks in `working-directory`, then in each folder above it up to the 
 | `uv.lock`, `poetry.lock` | The `devlanes` package, with PyPI versions such as `0.8.0rc1` read as `0.8.0-rc.1`. |
 | `package.json` | An exact version only. |
 
-A file that cannot be parsed gets a warning and the search goes on. A version older than 0.10.0, the first with `devlanes setup`, fails the step; set `version` to install another one. The log and the `version-source` output say where the version came from.
+A file that cannot be parsed gets a warning and the search goes on. A version older than 0.11.0 fails the step; set `version` to install another one. The log and the `version-source` output say where the version came from.
 
 To pick the version in the workflow instead:
 
 ```yaml
 - uses: devlanes-run/action@v0
   with:
-    version: latest   # or next, or 0.10.0
+    version: latest   # or next, or 0.11.0
 ```
 
 ## Platforms

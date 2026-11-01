@@ -19,11 +19,11 @@ async function json(url) {
   return response.json();
 }
 
-assert.match(urls.api ?? '', /^https:\/\/api\.fixture(-\d+)?\.localhost(:\d+)?$/, 'api URL');
+assert.match(urls.api ?? '', /^https:\/\/api\.fixture\d*\.localhost(:\d+)?$/, 'api URL');
 assert.match(urls.worker ?? '', /^http:\/\/127\.0\.0\.1:\d+$/, 'worker URL without hostnames');
 assert.ok(process.env.NODE_EXTRA_CA_CERTS, 'NODE_EXTRA_CA_CERTS is set for this step');
 assert.ok(process.env.SSL_CERT_FILE?.endsWith('bundle.pem'), 'SSL_CERT_FILE names the bundle');
-assert.ok(process.env.DEVLANES_PROJECT === 'fixture', "the lane's variables are set");
+assert.ok(process.env.DEVLANES_LANE_PROJECT === 'fixture', "the lane's variables are set");
 
 // HTTPS through the proxy, trusted through NODE_EXTRA_CA_CERTS on every OS.
 assert.deepEqual(await json(`${urls.api}/healthz`), { path: '/healthz' });

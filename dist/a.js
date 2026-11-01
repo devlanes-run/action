@@ -82727,11 +82727,11 @@ const hostsModes = [
 /**
  * The devlanes version this release of the action was tested with, installed when neither the
  * `version` input nor the project's files name one.
- */ const defaultVersion = '0.10.0';
+ */ const defaultVersion = '0.11.0';
 /**
- * The oldest devlanes the action supports, the first with `devlanes setup`, which the action
- * runs to trust the CA; its CI runs against nothing older.
- */ const minimumVersion = '0.10.0';
+ * The oldest devlanes the action supports: it runs `devlanes setup` (0.10.0) and exports the
+ * lane's project as `DEVLANES_LANE_PROJECT` (0.11.0). Its CI runs against nothing older.
+ */ const minimumVersion = '0.11.0';
 /** A bare release version, `X.Y.Z[-pre]`, in lower case. */ const releasePattern = /^\d+\.\d+\.\d+(-[0-9a-z.-]+)?$/;
 /**
  * A `version` input normalized to `latest`, `next` or a bare `X.Y.Z[-pre]`. Empty stays empty,
@@ -82746,7 +82746,7 @@ const hostsModes = [
         throw new Error(`Input "version" must be latest, next or a version such as ${defaultVersion}, not "${value}"`);
     }
     if (compareVersions(bare, minimumVersion) < 0) {
-        throw new Error(`devlanes ${bare} is too old for this action; use ${minimumVersion} or later, the first with devlanes setup`);
+        throw new Error(`devlanes ${bare} is too old for this action; use ${minimumVersion} or later`);
     }
     return bare;
 }

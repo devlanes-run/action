@@ -8,13 +8,79 @@ importers:
   .:
     devDependencies:
       devlanes:
-        specifier: ">=0.10.0 <0.10.1"
-        version: 0.10.0
+        specifier: ">=0.11.0 <0.11.1"
+        version: 0.11.0
 
 packages:
-  devlanes@0.10.0:
+  "@devlanes/darwin-arm64@0.11.0":
+    resolution:
+      {
+        integrity: sha512-qbUMMgxQbHglnC9G5jav/oSzCWVukiJjwAips6Kt/lNC1WbVbWuk4YZ9umyJt5srT6vM53ZP7Uw4lwfA8yNeyA==,
+      }
+    cpu: [arm64]
+    os: [darwin]
+
+  "@devlanes/darwin-x64@0.11.0":
+    resolution:
+      {
+        integrity: sha512-lwnvFZmtHotEyftWN6dzEL/jfSlVRy7FFY0K6SzGhyjpnJU81mJs3bq9ra5AXKQhH3nj4op3WH/EHFZKgY4VGA==,
+      }
+    cpu: [x64]
+    os: [darwin]
+
+  "@devlanes/linux-arm64@0.11.0":
+    resolution:
+      {
+        integrity: sha512-uKl3bSlKBIC8lla/beu+GWR1vuTSye7RzKvKwi6vKlBmYvXHd46RnFQT3S5tKYAsfUiArOo2QKVIejk9ZOm1xA==,
+      }
+    cpu: [arm64]
+    os: [linux]
+    libc: [glibc]
+
+  "@devlanes/win32-arm64@0.11.0":
+    resolution:
+      {
+        integrity: sha512-4Ejqe2bDcEZ5wWq6rvivoD8xrnW6X/VHTkMlM/aJeg1Y4nW6j6jveQE91oO9SKag59QMv4sXv1HLl3xqaZdtpg==,
+      }
+    cpu: [arm64]
+    os: [win32]
+
+  "@devlanes/win32-x64@0.11.0":
+    resolution:
+      {
+        integrity: sha512-N2Hs7eDle3n93JAU7t1/LtAulNOmPqAKWgXi1dK8yIy2Vw8KG4VH+I068FKoYKL7J6EEB9lPY05yNC21qt9/ng==,
+      }
+    cpu: [x64]
+    os: [win32]
+
+  devlanes@0.11.0:
+    resolution:
+      {
+        integrity: sha512-iDnvsbZ/r3x9yJcIkKTe4wuAMlXz3HjOvt0UZ46lsOGXHvBNyKZQP9EMsF3K6mPa9Hudk98+pWYwYwelfyEekA==,
+      }
     engines: { node: ">=18" }
     hasBin: true
 
 snapshots:
-  devlanes@0.10.0: {}
+  "@devlanes/darwin-arm64@0.11.0":
+    optional: true
+
+  "@devlanes/darwin-x64@0.11.0":
+    optional: true
+
+  "@devlanes/linux-arm64@0.11.0":
+    optional: true
+
+  "@devlanes/win32-arm64@0.11.0":
+    optional: true
+
+  "@devlanes/win32-x64@0.11.0":
+    optional: true
+
+  devlanes@0.11.0:
+    optionalDependencies:
+      "@devlanes/darwin-arm64": 0.11.0
+      "@devlanes/darwin-x64": 0.11.0
+      "@devlanes/linux-arm64": 0.11.0
+      "@devlanes/win32-arm64": 0.11.0
+      "@devlanes/win32-x64": 0.11.0
