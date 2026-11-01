@@ -6,6 +6,14 @@ requires-python = ">=3.9"
 name = "devlanes"
 version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/97/28/931b2ff399a65ee24579284361ffafba622aa41807c351f11ae2728b8272/devlanes-0.10.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:f75cb61a0cf5175e3435659f8445c8b1cecf7fca6c470db9ea88b8728442d714", size = 21064967, upload-time = "2026-11-01T20:52:54.021Z" },
+    { url = "https://files.pythonhosted.org/packages/69/27/8afcb9804ed04c366fb41ec5f5c7a335489127801f1f993911559be5bc1e/devlanes-0.10.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:c271bd33bd5f5e2084710c49a2ee82b3a2d19848210818ae48c96a9327674312", size = 19595389, upload-time = "2026-11-01T20:52:56.462Z" },
+    { url = "https://files.pythonhosted.org/packages/6f/07/f9fd53eb610aad6d906e0dab1f8bb8dbd0d3e882a05dd9d71fcd7830c7b5/devlanes-0.10.0-py3-none-manylinux_2_35_aarch64.whl", hash = "sha256:57220f54ac0e78fe491f6c356b372de8fb4be36dbd87f32e32366c3b8ac7507e", size = 20246972, upload-time = "2026-11-01T20:52:58.89Z" },
+    { url = "https://files.pythonhosted.org/packages/18/a6/99e58d15c377e50201db36ed6fa100ded5e37cf984fc53f143386d657df8/devlanes-0.10.0-py3-none-manylinux_2_35_x86_64.whl", hash = "sha256:704b32591ffd44b386461dca4774c7358954c6d1c1dbc3941909367f0418c979", size = 21866724, upload-time = "2026-11-01T20:53:01.615Z" },
+    { url = "https://files.pythonhosted.org/packages/fb/36/913cf6c2aac488076fd7051b93d09efbca9c6ac516a55d9895ba0bb937ca/devlanes-0.10.0-py3-none-win_amd64.whl", hash = "sha256:b8295444088edd2c6e165198b73b12085967d46110fca22bae174c9a6ebff3ac", size = 22318804, upload-time = "2026-11-01T20:53:03.907Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/0c/7fe796676448fb84601d17a7e4ab13de4f4b1aebc28942e12bb690bced5c/devlanes-0.10.0-py3-none-win_arm64.whl", hash = "sha256:94007285cec1d9ed08e2abf714f1f97d14fb4cd41bf9c4d713be1b35826cf51f", size = 20512562, upload-time = "2026-11-01T20:53:06.405Z" },
+]
 
 [[package]]
 name = "lockfile-uv-fixture"

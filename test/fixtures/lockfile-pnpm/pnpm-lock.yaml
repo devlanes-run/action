@@ -1,20 +1,23 @@
-lockfileVersion: "9.0"
+lockfileVersion: '9.0'
 
 settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
 importers:
+
   .:
     devDependencies:
       devlanes:
-        specifier: ">=0.10.0 <0.10.1"
+        specifier: '>=0.10.0 <0.10.1'
         version: 0.10.0
 
 packages:
+
   devlanes@0.10.0:
-    engines: { node: ">=18" }
+    engines: {node: '>=18'}
     hasBin: true
 
 snapshots:
+
   devlanes@0.10.0: {}
