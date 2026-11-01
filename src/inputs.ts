@@ -84,10 +84,13 @@ function uploadMode(value: string): UploadMode {
  * The devlanes version this release of the action was tested with, installed when neither the
  * `version` input nor the project's files name one.
  */
-export const defaultVersion = '0.7.0';
+export const defaultVersion = '0.10.0';
 
-/** The oldest devlanes the action supports; its CI runs against nothing older. */
-export const minimumVersion = '0.7.0';
+/**
+ * The oldest devlanes the action supports, the first with `devlanes setup`, which the action
+ * runs to trust the CA; its CI runs against nothing older.
+ */
+export const minimumVersion = '0.10.0';
 
 /** A bare release version, `X.Y.Z[-pre]`, in lower case. */
 export const releasePattern = /^\d+\.\d+\.\d+(-[0-9a-z.-]+)?$/;
@@ -109,7 +112,9 @@ export function version(value: string): string {
     );
   }
   if (compareVersions(bare, minimumVersion) < 0) {
-    throw new Error(`devlanes ${bare} is too old for this action; use ${minimumVersion} or later`);
+    throw new Error(
+      `devlanes ${bare} is too old for this action; use ${minimumVersion} or later, the first with devlanes setup`
+    );
   }
   return bare;
 }

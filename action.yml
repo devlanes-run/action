@@ -10,11 +10,11 @@ branding:
 inputs:
   version:
     description: >-
-      devlanes version to install: `latest`, `next` or a release such as `0.7.0`, which is the
-      oldest the action supports. Empty reads the version from the project's lockfile (pnpm, npm,
-      yarn, bun, uv, poetry) or an exact version in package.json, searching `working-directory`
-      and the folders above it up to the workspace, else uses 0.7.0, the release this version of
-      the action was tested with.
+      devlanes version to install: `latest`, `next` or a release such as `0.10.0`, the first with
+      `devlanes setup` and the oldest the action supports. Empty reads the version from the
+      project's lockfile (pnpm, npm, yarn, bun, uv, poetry) or an exact version in package.json,
+      searching `working-directory` and the folders above it up to the workspace, else uses
+      0.10.0, the release this version of the action was tested with.
     required: false
     default: ""
   command:
@@ -68,17 +68,20 @@ inputs:
     default: ""
   trust:
     description: >-
-      On Linux, trust the devlanes CA in the system store and in the NSS store that Chromium
-      reads. macOS and Windows runners cannot, and get a warning. Only the first use of the action
-      in a job applies it.
+      On Linux, run `devlanes setup`, which trusts the devlanes CA in the system store and in the
+      NSS store that Chromium reads. macOS and Windows runners cannot, and get a warning. Only the
+      first use of the action in a job applies it.
     required: false
     default: "true"
   hosts-file:
     description: >-
       Hosts file entries for the lane's hostnames: `auto`, `true` or `false`. On Windows and macOS,
       `auto` writes them when `*.localhost` does not resolve and `true` always does. On Linux,
-      `true` installs devlanes' /etc/hosts helper (which also trusts the CA) for programs that
-      skip the system resolver, such as Wrangler's workerd; only the first use in a job does that.
+      `true` sets `hostnames.hosts_file: always` and runs `devlanes setup`, even with
+      `trust: false`. Setup then installs devlanes' /etc/hosts helper for programs that skip the
+      system resolver, such as Wrangler's workerd, and also trusts the CA. `false` sets
+      `hostnames.hosts_file: never`. A `hostnames.hosts_file` in `config` wins. On Linux only the
+      first use in a job applies it.
     required: false
     default: auto
   low-ports:
