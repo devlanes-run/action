@@ -84,10 +84,13 @@ function uploadMode(value: string): UploadMode {
  * The devlanes version this release of the action was tested with, installed when neither the
  * `version` input nor the project's files name one.
  */
-export const defaultVersion = '0.7.0';
+export const defaultVersion = '0.11.0';
 
-/** The oldest devlanes the action supports; its CI runs against nothing older. */
-export const minimumVersion = '0.7.0';
+/**
+ * The oldest devlanes the action supports: it runs `devlanes setup` (0.10.0) and exports the
+ * lane's project as `DEVLANES_LANE_PROJECT` (0.11.0). Its CI runs against nothing older.
+ */
+export const minimumVersion = '0.11.0';
 
 /** A bare release version, `X.Y.Z[-pre]`, in lower case. */
 export const releasePattern = /^\d+\.\d+\.\d+(-[0-9a-z.-]+)?$/;

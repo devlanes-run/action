@@ -4,15 +4,15 @@ requires-python = ">=3.9"
 
 [[package]]
 name = "devlanes"
-version = "0.7.0"
+version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/82/b1c46bce4c9ae332f8a7121507465d375cbc3a76c16cdb5eb9df94f9bf21/devlanes-0.7.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:9ba909e9f79ecb4eb8d30921925af5b083f20f447d75e01a803ed6c1675ec9c3", size = 19545558, upload-time = "2026-10-28T04:58:56.693Z" },
-    { url = "https://files.pythonhosted.org/packages/80/89/e929b5b5e5da55ce695388f5afb6e67c395ec19a14cfa8f6058998611608/devlanes-0.7.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:9235a41707a31bc1c836bcc8274da56a580c4570c28e415b110872427f19b640", size = 18208085, upload-time = "2026-10-28T04:58:59.338Z" },
-    { url = "https://files.pythonhosted.org/packages/e4/44/bbdf9df319a3453f5bfbf714ac2256848ec93e411454d0f33b0163b2a424/devlanes-0.7.0-py3-none-manylinux_2_35_aarch64.whl", hash = "sha256:45921bc69f2e0d76b7e25e63e92a1b5c1d6fcab080f8336789cd6bbf1018374c", size = 18757511, upload-time = "2026-10-28T04:59:02.02Z" },
-    { url = "https://files.pythonhosted.org/packages/8d/8a/60bc1a9076155bffd824b2c2e4780baa5c66d8539c5456d838f6dd7bd0bb/devlanes-0.7.0-py3-none-manylinux_2_35_x86_64.whl", hash = "sha256:705d67d458521ff14d60e9f5616c73070040cdcc29c3d2f9480ea63c2def235c", size = 20209259, upload-time = "2026-10-28T04:59:04.457Z" },
-    { url = "https://files.pythonhosted.org/packages/e2/54/0ec3ef0e3c34114845245b6d9c4494d2ebc404c7bbf198252c28ad80baa3/devlanes-0.7.0-py3-none-win_amd64.whl", hash = "sha256:b568fa6408129f89d9a3a8ad956e420a566781dbb130611a3e151c948a8865b9", size = 21149517, upload-time = "2026-10-28T04:59:07.387Z" },
-    { url = "https://files.pythonhosted.org/packages/e3/9b/40f61a614a14673fcd09d3820d3039e18675576e8a8674ccfa944dc179a9/devlanes-0.7.0-py3-none-win_arm64.whl", hash = "sha256:9dfca6d69411c854d68160dc8552799f4d56484f4fcd5f3a41ea1beed8092dd7", size = 19495358, upload-time = "2026-10-28T04:59:10.301Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/cc/b7b7c5cd669f8f6b2420a3feda428f8bfba173999a06458683608216de20/devlanes-0.11.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:bdfb5ca0e987fd6ca123f6a1ab2496c7fe26a1bfa93dd1da636f5345c2ff0523", size = 21120863, upload-time = "2026-11-01T23:46:57.445Z" },
+    { url = "https://files.pythonhosted.org/packages/c2/13/7919882e39db1594859438936c24ad188ac99a45946a43f2150eb146ecca/devlanes-0.11.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:51d9ace4b7662158cbe3c49d3b725b046f5b42afce199639ab4bca7cb60cb9ea", size = 19579683, upload-time = "2026-11-01T23:47:00.488Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/ce/c0574d4b0a89f45aab304411b0ea039c24791bc4c7f6b1095b99e56161fe/devlanes-0.11.0-py3-none-manylinux_2_35_aarch64.whl", hash = "sha256:f7d9340256c1694ef780a9d21bdd1e5b1f03750b5941d82a996f9fd6f59f3c0f", size = 20272076, upload-time = "2026-11-01T23:47:03.777Z" },
+    { url = "https://files.pythonhosted.org/packages/45/c9/aa11552754965cb5e6ab9fc38c098bfe30f6061ae0ed46f01d0999cc1e14/devlanes-0.11.0-py3-none-manylinux_2_35_x86_64.whl", hash = "sha256:1c6b8a6c490fdb4f49b7f8e8da994272e3e422040c640136f4af178d189f1de5", size = 21877930, upload-time = "2026-11-01T23:47:07.03Z" },
+    { url = "https://files.pythonhosted.org/packages/25/ba/067595832e1d376267d863638c007504ed7d63e04ac89e871342df27eb4a/devlanes-0.11.0-py3-none-win_amd64.whl", hash = "sha256:887fe95b775650f0152c61f52524e9b8258ae50266851c26ac75329f225d3982", size = 22356975, upload-time = "2026-11-01T23:47:10.35Z" },
+    { url = "https://files.pythonhosted.org/packages/9d/2d/ffd4e7e2144c74c015c7406911ff3a7d1aba4e2a8b9501e410655841e78d/devlanes-0.11.0-py3-none-win_arm64.whl", hash = "sha256:a86a47874541f2eb12c5fb8975ce2f7aad659201c62a6748b7bbf061e6773b19", size = 20527010, upload-time = "2026-11-01T23:47:13.312Z" },
 ]
 
 [[package]]
@@ -24,4 +24,4 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "devlanes", specifier = ">=0.7.0,<0.7.1" }]
+requires-dist = [{ name = "devlanes", specifier = ">=0.11.0,<0.11.1" }]

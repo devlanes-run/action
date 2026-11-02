@@ -31,7 +31,8 @@ import {
   ciConfig,
   daemonStatus,
   flattenConfig,
-  trustLinux,
+  hostsConfig,
+  setupLinux,
   trustSkippedWarning
 } from './setup.ts';
 import { writeScript } from './shell.ts';
@@ -137,7 +138,7 @@ async function prepare(devlanes: Devlanes, inputs: Inputs): Promise<boolean> {
   const before = await daemonStatus(devlanes);
   if (process.env[readyVariable] && before.running) {
     core.info(
-      'devlanes is already set up in this job; config, trust, low-ports and, on Linux, hosts-file: true apply only to the first use of the action'
+      'devlanes is already set up in this job; config, trust, low-ports and, on Linux, hosts-file apply only to the first use of the action'
     );
     return false;
   }
@@ -150,17 +151,17 @@ async function prepare(devlanes: Devlanes, inputs: Inputs): Promise<boolean> {
   const daemonStarted = await core.group('Set up devlanes', async () => {
     const own = flattenConfig(inputs.config);
     // The workflow's settings go last, so they win over the action's.
-    await applyConfig(
-      devlanes,
-      ciConfig.map(([key, value]) => ({ key, value }))
-    );
+    await applyConfig(devlanes, [
+      ...ciConfig.map(([key, value]) => ({ key, value })),
+      ...hostsConfig(process.platform, inputs.hostsFile)
+    ]);
     await applyConfig(devlanes, own);
 
-    const helper = inputs.hostsFile === 'true';
     if (process.platform === 'linux') {
       if (inputs.lowPorts) await allowLowPorts();
       const stores = !own.some((change) => change.key === 'tls.trust');
-      if (inputs.trust || helper) await trustLinux(devlanes, helper, stores);
+      // Setup is what installs the helper for hosts-file: true, and it trusts the CA as well.
+      if (inputs.trust || inputs.hostsFile === 'true') await setupLinux(devlanes, stores);
     } else if (inputs.trust) {
       core.warning(trustSkippedWarning(process.platform));
     }

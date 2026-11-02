@@ -336,6 +336,28 @@ jobs:
           devlanes daemon status
           test -n "$NODE_EXTRA_CA_CERTS"
 
+  hosts-helper:
+    name: hosts-file true on Linux
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install devlanes with the hosts file helper
+        uses: ./
+        with:
+          version: ${{ env.DEVLANES_TEST_VERSION }}
+          command: install
+          hosts-file: true
+
+      # *.localhost resolves on this runner, so only hostnames.hosts_file: always asks for the
+      # helper, and setup --check exits 1 while any step it wants is missing.
+      - name: Check the helper is installed and setup has nothing left to do
+        run: |
+          test -x /usr/local/libexec/devlanes-hosts
+          devlanes setup --check
+
   lockfile:
     name: Version from ${{ matrix.file }}
     runs-on: ubuntu-latest
@@ -352,7 +374,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # No version input, so the fixture's lockfile, which pins 0.7.0, decides.
+      # No version input, so the fixture's lockfile, which pins 0.11.0, decides.
       - name: Install the version the lockfile pins
         id: devlanes
         uses: ./
@@ -362,10 +384,10 @@ jobs:
 
       - name: Check the version and where it came from
         if: >-
-          steps.devlanes.outputs.version != '0.7.0' ||
+          steps.devlanes.outputs.version != '0.11.0' ||
           steps.devlanes.outputs.version-source != format('test/fixtures/{0}/{1}', matrix.fixture, matrix.file)
         run: |
-          echo "::error::version '${{ steps.devlanes.outputs.version }}' from '${{ steps.devlanes.outputs.version-source }}', expected 0.7.0 from test/fixtures/${{ matrix.fixture }}/${{ matrix.file }}"
+          echo "::error::version '${{ steps.devlanes.outputs.version }}' from '${{ steps.devlanes.outputs.version-source }}', expected 0.11.0 from test/fixtures/${{ matrix.fixture }}/${{ matrix.file }}"
           exit 1
 
   failed-script:
@@ -491,6 +513,7 @@ jobs:
       - quiet
       - two-lanes
       - install
+      - hosts-helper
       - lockfile
       - failed-script
       - unnamed

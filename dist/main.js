@@ -12578,8 +12578,8 @@ const dependencyGroups = [
                 search.warn(`${source} names devlanes ${found}, which is not a release version; skipping it`);
                 continue;
             }
-            if (compareVersions(version, (/* inlined export .minimumVersion */"0.7.0")) < 0) {
-                throw new Error(`${source} pins devlanes ${version}, which is too old for this action; use ${(/* inlined export .minimumVersion */"0.7.0")} or later or set version`);
+            if (compareVersions(version, (/* inlined export .minimumVersion */"0.11.0")) < 0) {
+                throw new Error(`${source} pins devlanes ${version}, which is too old for this action; pin ${(/* inlined export .minimumVersion */"0.11.0")} or later or set version`);
             }
             return {
                 version,
@@ -12595,7 +12595,7 @@ const dependencyGroups = [
         source: 'input'
     };
     return pinnedVersion(search) ?? {
-        version: (/* inlined export .defaultVersion */"0.7.0"),
+        version: (/* inlined export .defaultVersion */"0.11.0"),
         source: 'default'
     };
 }
@@ -13533,7 +13533,7 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
 
 
 // Prepares the runner before the daemon starts: user config and the proxy's ports, which the
-// daemon reads only when it starts, and on Linux trust in the devlanes CA.
+// daemon reads only when it starts, and on Linux `devlanes setup`.
 
 
 
@@ -13560,6 +13560,20 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
         'false'
     ]
 ];
+/**
+ * `hostnames.hosts_file` for the `hosts-file` input, on Linux only, where devlanes writes
+ * /etc/hosts through a helper that `devlanes setup` installs: `always` asks for the helper even
+ * when `*.localhost` resolves, and `never` keeps setup from installing it. Elsewhere the action
+ * writes the hosts file itself.
+ */ function hostsConfig(platform, mode) {
+    if (platform !== 'linux' || mode === 'auto') return [];
+    return [
+        {
+            key: 'hostnames.hosts_file',
+            value: mode === 'true' ? 'always' : 'never'
+        }
+    ];
+}
 /**
  * The `config` input as dotted settings. Mappings become dotted keys; lists and scalars become
  * JSON, which `devlanes config set` reads as YAML: a string stays a string even when it looks
@@ -13676,9 +13690,10 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
     return succeeds('sudo', install);
 }
 /**
- * Trusts the devlanes CA on Linux through `devlanes certs trust`; problems become warnings.
- * `stores` false keeps a `tls.trust` the workflow set through the `config` input.
- */ async function trustLinux(devlanes, hostsFile, stores) {
+ * Runs `devlanes setup` on Linux, which trusts the CA in the stores of `tls.trust` and installs
+ * the /etc/hosts helper when `hostnames.hosts_file` or the runner needs it; problems become
+ * warnings. `stores` false keeps a `tls.trust` the workflow set through the `config` input.
+ */ async function setupLinux(devlanes, stores) {
     // A `tls.trust` from the workflow, such as one with firefox, needs certutil as much as ours.
     const certutil = await ensureCertutil();
     if (stores) {
@@ -13692,13 +13707,10 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
     if (!certutil) {
         core_warning('certutil is missing and could not be installed; browsers on this runner will not trust the devlanes CA');
     }
-    const args = hostsFile ? [
-        'certs',
-        'trust',
-        '--hosts'
-    ] : [
-        'certs',
-        'trust'
+    // Without a terminal, setup refuses to act unless --yes answers its question.
+    const args = [
+        'setup',
+        '--yes'
     ];
     const result = await devlanes.run(args, {
         stream: true
@@ -13707,7 +13719,7 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
 }
 /** The warning for runners where the OS store cannot be changed without a person. */ function trustSkippedWarning(platform) {
     const os = platform === 'darwin' ? 'macOS' : 'Windows';
-    return `Skipped devlanes certs trust: ${os} asks for confirmation in a dialog, which a runner cannot answer. Node, Deno, Python and OpenSSL-based tools still trust the CA through export-ca; browsers and curl do not. Set trust: false to hide this warning.`;
+    return `Skipped devlanes setup: ${os} asks for confirmation in a dialog, which a runner cannot answer. Node, Deno, Python and OpenSSL-based tools still trust the CA through export-ca; browsers and curl do not. Set trust: false to hide this warning.`;
 }
 /**
  * The daemon's state. The command exits 1 when no daemon runs and then names the home; a
@@ -13915,7 +13927,7 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
  */ async function prepare(devlanes, inputs) {
     const before = await daemonStatus(devlanes);
     if (process.env[readyVariable] && before.running) {
-        core_info('devlanes is already set up in this job; config, trust, low-ports and, on Linux, hosts-file: true apply only to the first use of the action');
+        core_info('devlanes is already set up in this job; config, trust, low-ports and, on Linux, hosts-file apply only to the first use of the action');
         return false;
     }
     if (before.running) {
@@ -13924,16 +13936,19 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
     const daemonStarted = await core_group('Set up devlanes', async ()=>{
         const own = flattenConfig(inputs.config);
         // The workflow's settings go last, so they win over the action's.
-        await applyConfig(devlanes, ciConfig.map(([key, value])=>({
-                key,
-                value
-            })));
+        await applyConfig(devlanes, [
+            ...ciConfig.map(([key, value])=>({
+                    key,
+                    value
+                })),
+            ...hostsConfig(process.platform, inputs.hostsFile)
+        ]);
         await applyConfig(devlanes, own);
-        const helper = inputs.hostsFile === 'true';
         if (process.platform === 'linux') {
             if (inputs.lowPorts) await allowLowPorts();
             const stores = !own.some((change)=>change.key === 'tls.trust');
-            if (inputs.trust || helper) await trustLinux(devlanes, helper, stores);
+            // Setup is what installs the helper for hosts-file: true, and it trusts the CA as well.
+            if (inputs.trust || inputs.hostsFile === 'true') await setupLinux(devlanes, stores);
         } else if (inputs.trust) {
             core_warning(trustSkippedWarning(process.platform));
         }

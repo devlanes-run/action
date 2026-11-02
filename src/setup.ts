@@ -1,11 +1,12 @@
 // Prepares the runner before the daemon starts: user config and the proxy's ports, which the
-// daemon reads only when it starts, and on Linux trust in the devlanes CA.
+// daemon reads only when it starts, and on Linux `devlanes setup`.
 
 import { spawn } from 'node:child_process';
 import { dirname } from 'node:path';
 import * as core from '@actions/core';
 import { parse } from 'yaml';
 import { type Devlanes, parseJson } from './devlanes.ts';
+import type { HostsMode } from './inputs.ts';
 
 /**
  * Settings every CI daemon gets. A lane without requests would otherwise be throttled after 5
@@ -25,6 +26,17 @@ export const ciConfig: [string, string][] = [
 export interface ConfigChange {
   key: string;
   value: string | null;
+}
+
+/**
+ * `hostnames.hosts_file` for the `hosts-file` input, on Linux only, where devlanes writes
+ * /etc/hosts through a helper that `devlanes setup` installs: `always` asks for the helper even
+ * when `*.localhost` resolves, and `never` keeps setup from installing it. Elsewhere the action
+ * writes the hosts file itself.
+ */
+export function hostsConfig(platform: NodeJS.Platform, mode: HostsMode): ConfigChange[] {
+  if (platform !== 'linux' || mode === 'auto') return [];
+  return [{ key: 'hostnames.hosts_file', value: mode === 'true' ? 'always' : 'never' }];
 }
 
 /**
@@ -127,14 +139,11 @@ export async function ensureCertutil(): Promise<boolean> {
 }
 
 /**
- * Trusts the devlanes CA on Linux through `devlanes certs trust`; problems become warnings.
- * `stores` false keeps a `tls.trust` the workflow set through the `config` input.
+ * Runs `devlanes setup` on Linux, which trusts the CA in the stores of `tls.trust` and installs
+ * the /etc/hosts helper when `hostnames.hosts_file` or the runner needs it; problems become
+ * warnings. `stores` false keeps a `tls.trust` the workflow set through the `config` input.
  */
-export async function trustLinux(
-  devlanes: Devlanes,
-  hostsFile: boolean,
-  stores: boolean
-): Promise<void> {
+export async function setupLinux(devlanes: Devlanes, stores: boolean): Promise<void> {
   // A `tls.trust` from the workflow, such as one with firefox, needs certutil as much as ours.
   const certutil = await ensureCertutil();
   if (stores) {
@@ -148,7 +157,8 @@ export async function trustLinux(
     );
   }
 
-  const args = hostsFile ? ['certs', 'trust', '--hosts'] : ['certs', 'trust'];
+  // Without a terminal, setup refuses to act unless --yes answers its question.
+  const args = ['setup', '--yes'];
   const result = await devlanes.run(args, { stream: true });
   if (result.code !== 0) core.warning(`devlanes ${args.join(' ')} exited ${result.code}`);
 }
@@ -156,7 +166,7 @@ export async function trustLinux(
 /** The warning for runners where the OS store cannot be changed without a person. */
 export function trustSkippedWarning(platform: NodeJS.Platform): string {
   const os = platform === 'darwin' ? 'macOS' : 'Windows';
-  return `Skipped devlanes certs trust: ${os} asks for confirmation in a dialog, which a runner cannot answer. Node, Deno, Python and OpenSSL-based tools still trust the CA through export-ca; browsers and curl do not. Set trust: false to hide this warning.`;
+  return `Skipped devlanes setup: ${os} asks for confirmation in a dialog, which a runner cannot answer. Node, Deno, Python and OpenSSL-based tools still trust the CA through export-ca; browsers and curl do not. Set trust: false to hide this warning.`;
 }
 
 /** `devlanes daemon status --json`, which also names the devlanes home in use. */

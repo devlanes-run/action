@@ -10,7 +10,7 @@ Runs a project's [devlanes](https://devlanes.run) lane in GitHub Actions: its co
 - run: pnpm test:e2e
 ```
 
-Tests read their base URLs from `DEVLANES_PUBLIC_URL_<SERVICE>`, such as `DEVLANES_PUBLIC_URL_WEB=https://web.acme.localhost`, and trust the HTTPS proxy's certificates through `NODE_EXTRA_CA_CERTS` and the other CA variables the action sets. The [devlanes docs](https://devlanes.run/docs) cover `devlanes.yaml`, profiles, infra and the CLI. The action needs devlanes 0.7.0 or later.
+Tests read their base URLs from `DEVLANES_PUBLIC_URL_<SERVICE>`, such as `DEVLANES_PUBLIC_URL_WEB=https://web.acme.localhost`, and trust the HTTPS proxy's certificates through `NODE_EXTRA_CA_CERTS` and the other CA variables the action sets. The [devlanes docs](https://devlanes.run/docs) cover `devlanes.yaml`, profiles, infra and the CLI. The action needs devlanes 0.11.0 or later.
 
 ## Commands
 
@@ -30,7 +30,7 @@ While the lane starts, the log shows devlanes' own output: a collapsible group p
 
 | Input | Default | Description |
 | --- | --- | --- |
-| `version` | from the lockfile, else `0.7.0` | devlanes version: `latest`, `next` (the newest build of devlanes' main branch) or a release of 0.7.0 or later. Empty reads the version from the project's lockfile, else uses 0.7.0, the release this version of the action was tested with. See [Choosing the devlanes version](#choosing-the-devlanes-version). |
+| `version` | from the lockfile, else `0.11.0` | devlanes version: `latest`, `next` (the newest build of devlanes' main branch) or a release of 0.11.0 or later. Empty reads the version from the project's lockfile, else uses 0.11.0, the release this version of the action was tested with. See [Choosing the devlanes version](#choosing-the-devlanes-version). |
 | `command` | `start` | `start`, `with`, `stop` or `install`. |
 | `run` | | Script for `command: with`. It runs in `working-directory` with the lane's environment. |
 | `shell` | `bash`, `pwsh` on Windows | Shell for `run`: `bash`, `sh`, `pwsh`, `powershell` or `cmd`, with the flags GitHub uses for `run:` steps. `bash` on Windows is Git Bash. |
@@ -40,10 +40,10 @@ While the lane starts, the log shows devlanes' own output: a collapsible group p
 | `working-directory` | `.` | Directory with `devlanes.yaml`, relative to the workspace. |
 | `home` | `~/.devlanes` | `DEVLANES_HOME`. The action exports it, so later `devlanes` commands reach the same daemon. |
 | `config` | | YAML merged into the user `config.yaml` before the daemon starts, passed as a string such as a `\|` block (see [Lanes in CI](#lanes-in-ci)). Each setting goes through `devlanes config set`, which refuses unknown keys and invalid values. |
-| `trust` | `true` | On Linux, trust the devlanes CA in the system store and in the NSS store that Chromium reads. See [HTTPS](#https). |
+| `trust` | `true` | On Linux, run `devlanes setup` to trust the devlanes CA in the system store and in the NSS store that Chromium reads. See [HTTPS](#https). |
 | `hosts-file` | `auto` | Hosts file entries for the lane's hostnames: `auto`, `true` or `false`. See [Hostnames](#hostnames). |
 | `low-ports` | `true` | On Linux, let the proxy listen on 443 and 80, so public URLs carry no port. |
-| `export-env` | `true` | With `command: start`, give later steps the lane's variables: `DEVLANES_PUBLIC_URL_<SERVICE>`, `DEVLANES_PROJECT`, `DEVLANES_LANE` and the rest. |
+| `export-env` | `true` | With `command: start`, give later steps the lane's variables: `DEVLANES_PUBLIC_URL_<SERVICE>`, `DEVLANES_LANE_PROJECT`, `DEVLANES_LANE` and the rest. |
 | `export-ca` | `true` | Set `NODE_EXTRA_CA_CERTS`, `DENO_CERT`, `SSL_CERT_FILE` and `REQUESTS_CA_BUNDLE` for later steps and the `with` script. |
 | `upload-logs` | `on-failure` | When the logs are uploaded as an artifact: `on-failure`, `always` (or `true`) or `never` (or `false`). See [Logs](#logs). |
 | `artifact-name` | `devlanes-logs-<job name>-<lane>` | Name of the logs artifact. The default, such as `devlanes-logs-e2e-ubuntu-latest-acme-0`, differs between the jobs of a matrix and between projects in one job. When the API cannot name the job, the runner's name takes its place. |
@@ -51,7 +51,7 @@ While the lane starts, the log shows devlanes' own output: a collapsible group p
 | `cleanup` | `stop` | What the end of the job does: `stop` stops the lane and the daemon this step started; `clean` also runs `devlanes lane clean` and `devlanes infra down`, for self-hosted runners; `keep` leaves everything running and uploads no logs. |
 | `token` | `github.token` | Token for reading this job from the GitHub API, for `upload-logs: on-failure` and the default artifact name. Rarely needs changing. |
 
-`config`, `trust`, `low-ports` and `hosts-file: true` on Linux prepare the runner, so only the first use of the action in a job applies them.
+`config`, `trust`, `low-ports` and, on Linux, `hosts-file` prepare the runner, so only the first use of the action in a job applies them.
 
 ## Outputs
 
@@ -254,16 +254,16 @@ A home under `runner.temp` keeps each job's lanes and ports apart from the previ
 A project that has devlanes as a dependency does not need `version`: the action installs the version its lockfile resolved, the same one the developers run.
 
 ```yaml
-# package.json has "devlanes": "^0.7.0" and pnpm-lock.yaml resolved it to 0.7.2
-- uses: devlanes-run/action@v0   # installs 0.7.2
+# package.json has "devlanes": "^0.11.0" and pnpm-lock.yaml resolved it to 0.11.2
+- uses: devlanes-run/action@v0   # installs 0.11.2
 ```
 
 The first of these that names a version wins:
 
-1. The `version` input: `latest`, `next` or a release such as `0.7.0`.
+1. The `version` input: `latest`, `next` or a release such as `0.11.0`.
 2. A lockfile that names devlanes.
-3. An exact version of devlanes in `package.json` (`dependencies`, `devDependencies` or `optionalDependencies`), such as `0.7.2`. Ranges such as `^0.7.0` are ignored.
-4. 0.7.0, the release this version of the action was tested with.
+3. An exact version of devlanes in `package.json` (`dependencies`, `devDependencies` or `optionalDependencies`), such as `0.11.2`. Ranges such as `^0.11.0` are ignored.
+4. 0.11.0, the release this version of the action was tested with.
 
 The action looks in `working-directory`, then in each folder above it up to the workspace, and in each folder reads these files in this order:
 
@@ -276,14 +276,14 @@ The action looks in `working-directory`, then in each folder above it up to the 
 | `uv.lock`, `poetry.lock` | The `devlanes` package, with PyPI versions such as `0.8.0rc1` read as `0.8.0-rc.1`. |
 | `package.json` | An exact version only. |
 
-A file that cannot be parsed gets a warning and the search goes on. A version older than 0.7.0 fails the step; set `version` to install another one. The log and the `version-source` output say where the version came from.
+A file that cannot be parsed gets a warning and the search goes on. A version older than 0.11.0 fails the step; set `version` to install another one. The log and the `version-source` output say where the version came from.
 
 To pick the version in the workflow instead:
 
 ```yaml
 - uses: devlanes-run/action@v0
   with:
-    version: latest   # or next, or 0.7.0
+    version: latest   # or next, or 0.11.0
 ```
 
 ## Platforms
@@ -298,7 +298,7 @@ The proxy serves every hostname over HTTPS with certificates from a devlanes CA 
 
 `export-ca` sets `NODE_EXTRA_CA_CERTS` and `DENO_CERT` to the CA, and `SSL_CERT_FILE` and `REQUESTS_CA_BUNDLE` to a bundle of the system roots plus the CA, for later steps and the `with` script. Node, Bun, Deno, Python and tools built on OpenSSL then trust the proxy on every OS. When the workflow already points one of these variables at its own file, the action writes a file with both certificates and points the variable there. Services started by devlanes get devlanes' own CA variables, not that combined file.
 
-On Linux, `trust` adds the CA to the system store, which `curl` reads, and to the NSS store that Chromium reads, including Playwright's. The action runs `devlanes certs trust` with `tls.trust: [system, chrome]`, installing `libnss3-tools` first when `certutil` is missing. A Firefox installed on the runner has its own store in its profiles; set the whole list through `config` to add it (Playwright's Firefox starts with a fresh profile each time and does not read it):
+On Linux, `trust` adds the CA to the system store, which `curl` reads, and to the NSS store that Chromium reads, including Playwright's. The action sets `tls.trust: [system, chrome]` and runs `devlanes setup --yes`, installing `libnss3-tools` first when `certutil` is missing. `devlanes setup` can also install the `/etc/hosts` helper; see [Hostnames](#hostnames). A Firefox installed on the runner has its own store in its profiles; set the whole list through `config` to add it (Playwright's Firefox starts with a fresh profile each time and does not read it):
 
 ```yaml
 - uses: devlanes-run/action@v0
@@ -316,7 +316,15 @@ On Linux the proxy needs `low-ports` to listen on 443 and 80; without it, public
 
 Linux runners and macOS 26 resolve `*.localhost` to loopback. Windows Server, which GitHub's Windows runners run, and macOS before 26 do not, so there `hosts-file: auto` adds the lane's hostnames to the hosts file before anything starts and removes them at the end of the job. `true` adds them even when they resolve, and `false` never does. A hosts file takes only exact names, so wildcard hostnames (`*.acme.localhost`) do not resolve on those runners.
 
-Some programs skip the system resolver on any OS, such as Wrangler's workerd and Go programs built without cgo. On Linux, `hosts-file: true` installs devlanes' `/etc/hosts` helper for them, which also trusts the CA; see [hostnames and HTTPS](https://devlanes.run/docs/guides/https) in the devlanes docs.
+Some programs skip the system resolver on any OS, such as Wrangler's workerd and Go programs built without cgo. On Linux, `devlanes setup` installs devlanes' `/etc/hosts` helper for them, and `hosts-file` decides when:
+
+| `hosts-file` | User config | `devlanes setup` installs the helper |
+| --- | --- | --- |
+| `auto` | unchanged | when `*.localhost` does not resolve on the runner |
+| `true` | `hostnames.hosts_file: always` | always, and runs even with `trust: false`, which trusts the CA too |
+| `false` | `hostnames.hosts_file: never` | never |
+
+A `hostnames.hosts_file` set through `config` wins. See [hostnames and HTTPS](https://devlanes.run/docs/guides/https) in the devlanes docs.
 
 ### Lanes in CI
 

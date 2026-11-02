@@ -2,7 +2,7 @@
 project: fixture-failing
 services:
   api:
-    run: [node, test/fixtures/server.mjs]
+    run: [node, ../server.mjs]
     hosts: "api.${{ lane.domain }}"
   broken:
     run: [node, -e, "console.error('broken: missing configuration'); process.exit(3)"]

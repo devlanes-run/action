@@ -107,17 +107,21 @@ test('versions accept latest, next and exact releases with or without v', () => 
   assert.equal(version('  '), '');
   assert.equal(version('Latest'), 'latest');
   assert.equal(version('next'), 'next');
-  assert.equal(version('0.7.0'), '0.7.0');
-  assert.equal(version('v0.7.2'), '0.7.2');
+  assert.equal(version('0.11.0'), '0.11.0');
+  assert.equal(version('v0.11.2'), '0.11.2');
   assert.equal(version('1.0.0-rc.1'), '1.0.0-rc.1');
-  assert.throws(() => version('0.7'), /must be latest, next or a version/);
-  assert.throws(() => version('^0.7.0'), /must be latest, next or a version/);
+  assert.throws(() => version('0.10'), /must be latest, next or a version/);
+  assert.throws(() => version('^0.10.0'), /must be latest, next or a version/);
 });
 
 test('versions older than the minimum are refused', () => {
-  assert.equal(minimumVersion, '0.7.0');
-  assert.throws(() => version('0.6.1'), /devlanes 0\.6\.1 is too old for this action; use 0\.7\.0/);
-  assert.throws(() => version('0.7.0-rc.1'), /too old/);
+  assert.equal(minimumVersion, '0.11.0');
+  assert.throws(
+    () => version('0.9.0'),
+    /^Error: devlanes 0\.9\.0 is too old for this action; use 0\.11\.0 or later$/
+  );
+  assert.throws(() => version('0.10.0'), /too old/);
+  assert.throws(() => version('0.11.0-rc.1'), /too old/);
   assert.ok(compareVersions(defaultVersion, minimumVersion) >= 0);
 });
 

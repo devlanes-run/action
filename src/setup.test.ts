@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Devlanes, RunResult } from './devlanes.ts';
-import { applyConfig, daemonStatus, flattenConfig } from './setup.ts';
+import { applyConfig, daemonStatus, flattenConfig, hostsConfig } from './setup.ts';
 
 /** A devlanes CLI that records its calls and answers from `answer`. */
 function fake(answer: (args: string[]) => RunResult) {
@@ -37,6 +37,18 @@ test('the config input becomes dotted settings', () => {
   ]);
   assert.deepEqual(flattenConfig('  \n'), []);
   assert.throws(() => flattenConfig('- a\n- b\n'), /must be a YAML mapping/);
+});
+
+test('hosts-file sets hostnames.hosts_file on Linux only', () => {
+  assert.deepEqual(hostsConfig('linux', 'true'), [
+    { key: 'hostnames.hosts_file', value: 'always' }
+  ]);
+  assert.deepEqual(hostsConfig('linux', 'false'), [
+    { key: 'hostnames.hosts_file', value: 'never' }
+  ]);
+  assert.deepEqual(hostsConfig('linux', 'auto'), []);
+  assert.deepEqual(hostsConfig('darwin', 'true'), []);
+  assert.deepEqual(hostsConfig('win32', 'false'), []);
 });
 
 test('settings are applied with config set, nulls with config unset', async () => {

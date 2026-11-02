@@ -2,6 +2,6 @@
   "name": "lockfile-pnpm-fixture",
   "private": true,
   "devDependencies": {
-    "devlanes": ">=0.7.0 <0.7.1"
+    "devlanes": ">=0.11.0 <0.11.1"
   }
 }

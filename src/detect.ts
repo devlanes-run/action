@@ -232,7 +232,7 @@ export function pinnedVersion(search: Search): Resolved | null {
       }
       if (compareVersions(version, minimumVersion) < 0) {
         throw new Error(
-          `${source} pins devlanes ${version}, which is too old for this action; use ${minimumVersion} or later or set version`
+          `${source} pins devlanes ${version}, which is too old for this action; pin ${minimumVersion} or later or set version`
         );
       }
       return { version, source };

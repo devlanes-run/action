@@ -10,7 +10,7 @@ infra:
     whoami: "whoami.${{ lane.domain }}"
 services:
   api:
-    run: [node, test/fixtures/server.mjs]
+    run: [node, ../server.mjs]
     hosts: "api.${{ lane.domain }}"
     env:
       WHOAMI_URL: "http://127.0.0.1:${{ infra.whoami.ports.http }}"
