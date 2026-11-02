@@ -298,7 +298,7 @@ The proxy serves every hostname over HTTPS with certificates from a devlanes CA 
 
 `export-ca` sets `NODE_EXTRA_CA_CERTS` and `DENO_CERT` to the CA, and `SSL_CERT_FILE` and `REQUESTS_CA_BUNDLE` to a bundle of the system roots plus the CA, for later steps and the `with` script. Node, Bun, Deno, Python and tools built on OpenSSL then trust the proxy on every OS. When the workflow already points one of these variables at its own file, the action writes a file with both certificates and points the variable there. Services started by devlanes get devlanes' own CA variables, not that combined file.
 
-On Linux, `trust` adds the CA to the system store, which `curl` reads, and to the NSS store that Chromium reads, including Playwright's. The action sets `tls.trust: [system, chrome]` and runs `devlanes setup --yes`, installing `libnss3-tools` first when `certutil` is missing. Setup also installs devlanes' `/etc/hosts` helper when `*.localhost` does not resolve on the runner, unless `hosts-file` is `false` (see [Hostnames](#hostnames)). A Firefox installed on the runner has its own store in its profiles; set the whole list through `config` to add it (Playwright's Firefox starts with a fresh profile each time and does not read it):
+On Linux, `trust` adds the CA to the system store, which `curl` reads, and to the NSS store that Chromium reads, including Playwright's. The action sets `tls.trust: [system, chrome]` and runs `devlanes setup --yes`, installing `libnss3-tools` first when `certutil` is missing. `devlanes setup` can also install the `/etc/hosts` helper; see [Hostnames](#hostnames). A Firefox installed on the runner has its own store in its profiles; set the whole list through `config` to add it (Playwright's Firefox starts with a fresh profile each time and does not read it):
 
 ```yaml
 - uses: devlanes-run/action@v0
@@ -316,7 +316,15 @@ On Linux the proxy needs `low-ports` to listen on 443 and 80; without it, public
 
 Linux runners and macOS 26 resolve `*.localhost` to loopback. Windows Server, which GitHub's Windows runners run, and macOS before 26 do not, so there `hosts-file: auto` adds the lane's hostnames to the hosts file before anything starts and removes them at the end of the job. `true` adds them even when they resolve, and `false` never does. A hosts file takes only exact names, so wildcard hostnames (`*.acme.localhost`) do not resolve on those runners.
 
-Some programs skip the system resolver on any OS, such as Wrangler's workerd and Go programs built without cgo. On Linux, `hosts-file: true` sets `hostnames.hosts_file: always` in the user config and runs `devlanes setup`, which installs devlanes' `/etc/hosts` helper for them. Setup trusts the CA as well, even with `trust: false`. `hosts-file: false` sets `hostnames.hosts_file: never`, and `auto` leaves the setting to devlanes, which writes the hosts file only when `*.localhost` does not resolve. A `hostnames.hosts_file` set through `config` wins. See [hostnames and HTTPS](https://devlanes.run/docs/guides/https) in the devlanes docs.
+Some programs skip the system resolver on any OS, such as Wrangler's workerd and Go programs built without cgo. On Linux, `devlanes setup` installs devlanes' `/etc/hosts` helper for them, and `hosts-file` decides when:
+
+| `hosts-file` | User config | `devlanes setup` installs the helper |
+| --- | --- | --- |
+| `auto` | unchanged | when `*.localhost` does not resolve on the runner |
+| `true` | `hostnames.hosts_file: always` | always, and runs even with `trust: false`, which trusts the CA too |
+| `false` | `hostnames.hosts_file: never` | never |
+
+A `hostnames.hosts_file` set through `config` wins. See [hostnames and HTTPS](https://devlanes.run/docs/guides/https) in the devlanes docs.
 
 ### Lanes in CI
 

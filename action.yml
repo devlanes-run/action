@@ -77,11 +77,11 @@ inputs:
     description: >-
       Hosts file entries for the lane's hostnames: `auto`, `true` or `false`. On Windows and macOS,
       `auto` writes them when `*.localhost` does not resolve and `true` always does. On Linux,
-      `true` sets `hostnames.hosts_file: always` and runs `devlanes setup`, even with
-      `trust: false`. Setup then installs devlanes' /etc/hosts helper for programs that skip the
-      system resolver, such as Wrangler's workerd, and also trusts the CA. `false` sets
-      `hostnames.hosts_file: never`. A `hostnames.hosts_file` in `config` wins. On Linux only the
-      first use in a job applies it.
+      `devlanes setup` installs devlanes' /etc/hosts helper for programs that skip the system
+      resolver, such as Wrangler's workerd: with `auto` when `*.localhost` does not resolve, with
+      `true` always (`devlanes setup` then runs even with `trust: false` and trusts the CA too),
+      with `false` never. A `hostnames.hosts_file` in `config` wins. On Linux only the first use
+      in a job applies it.
     required: false
     default: auto
   low-ports:
