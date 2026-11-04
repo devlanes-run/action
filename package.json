@@ -29,7 +29,7 @@
   "devDependencies": {
     "@arthurfiorette/biomejs-config": "^2.0.1",
     "@biomejs/biome": "^2.6.3",
-    "@rslib/core": "^1.0.4",
+    "@rslib/core": "^1.0.5",
     "@types/node": "^24.19.2",
     "playwright": "^1.64.1",
     "typescript": "^7.0.2"
