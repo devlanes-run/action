@@ -328,7 +328,7 @@ A `hostnames.hosts_file` set through `config` wins. See [hostnames and HTTPS](ht
 
 ### Lanes in CI
 
-A CI checkout is one lane. devlanes numbers lanes per project, and the domain carries the number for every lane but 0 (`acme.localhost`, `acme-1.localhost`). Read URLs from `DEVLANES_PUBLIC_URL_<SERVICE>` or the outputs instead of writing the domain in tests.
+A CI checkout is one lane. devlanes numbers lanes per project, and the domain carries the number for every lane but 0 (`acme.localhost`, `acme1.localhost`). Read URLs from `DEVLANES_PUBLIC_URL_<SERVICE>` or the outputs instead of writing the domain in tests.
 
 The action sets `lanes.freeze_after: 0s` and `lanes.throttle_after: 0s`, so the lane is not frozen or slowed down while a long build runs between `start` and the tests, and `daemon.exit_when_idle: false`, so the daemon waits for the steps that use it. Pass `config` to change any of them.
 
