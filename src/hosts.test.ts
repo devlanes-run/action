@@ -12,20 +12,16 @@ test('hostnames come from the https URLs of services and containers', () => {
         state: 'idle',
         urls: [
           'http://127.0.0.1:20000',
-          'https://api.acme-1.localhost',
-          'https://admin.acme-1.localhost:8443',
+          'https://api.acme1.localhost',
+          'https://admin.acme1.localhost:8443',
           'https://[not a url'
         ]
       },
       { name: 'worker', state: 'idle', urls: ['http://127.0.0.1:20001'] }
     ],
-    containers: [{ name: 'mailpit', urls: ['https://mail.acme-1.localhost'] }]
+    containers: [{ name: 'mailpit', urls: ['https://mail.acme1.localhost'] }]
   });
-  assert.deepEqual(hosts, [
-    'admin.acme-1.localhost',
-    'api.acme-1.localhost',
-    'mail.acme-1.localhost'
-  ]);
+  assert.deepEqual(hosts, ['admin.acme1.localhost', 'api.acme1.localhost', 'mail.acme1.localhost']);
   assert.deepEqual(laneHostnames(undefined), []);
 });
 
