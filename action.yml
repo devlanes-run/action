@@ -54,6 +54,13 @@ inputs:
     description: Directory that contains devlanes.yaml, relative to the workspace.
     required: false
     default: "."
+  file:
+    description: >-
+      Project file to use instead of the nearest devlanes.yaml, such as `devlanes.prod.yaml`,
+      relative to `working-directory`. Passed as `--file` to every devlanes command about the
+      lane, including the post step's.
+    required: false
+    default: ""
   home:
     description: >-
       `DEVLANES_HOME` for this job. Empty keeps devlanes' default, `~/.devlanes`. Exported, so

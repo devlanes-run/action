@@ -13,6 +13,8 @@ export interface RunResult {
 /** Options for one devlanes call. */
 export interface RunOptions {
   cwd?: string;
+  /** Project file passed as `--file`, relative to `cwd`; empty finds the nearest devlanes.yaml. */
+  file?: string;
   /** Stream output to the job log instead of capturing it. */
   stream?: boolean;
 }
@@ -28,9 +30,9 @@ export interface Devlanes {
 /** A devlanes CLI at `bin`, run with `env`. */
 export function cli(bin: string, env: Record<string, string>): Devlanes {
   return {
-    run: (args, options = {}) => spawnProcess(bin, args, env, options),
+    run: (args, options = {}) => spawnProcess(bin, fileArgs(args, options), env, options),
     async json<T>(args: string[], options: RunOptions = {}): Promise<T> {
-      const result = await spawnProcess(bin, [...args, '--json'], env, {
+      const result = await spawnProcess(bin, [...fileArgs(args, options), '--json'], env, {
         ...options,
         stream: false
       });
@@ -44,6 +46,14 @@ export function cli(bin: string, env: Record<string, string>): Devlanes {
       return parseJson<T>(result.stdout, args);
     }
   };
+}
+
+/**
+ * `args` with `--file` in front, where devlanes takes global options, since anything after the
+ * `--` of `devlanes with` belongs to the script.
+ */
+function fileArgs(args: string[], options: RunOptions): string[] {
+  return options.file ? ['--file', options.file, ...args] : args;
 }
 
 /** The last JSON document in `stdout`, since streaming commands print NDJSON. */

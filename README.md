@@ -38,6 +38,7 @@ While the lane starts, the log shows devlanes' own output: a collapsible group p
 | `units` | | Units to start, separated by spaces or newlines, such as `api web` or `+api`. Without units or profiles devlanes starts what the lane ran before, else its `default` profile. |
 | `timeout` | `180s` | How long to wait for every unit to be ready, such as `5m`. |
 | `working-directory` | `.` | Directory with `devlanes.yaml`, relative to the workspace. |
+| `file` | | Project file to use instead of `devlanes.yaml`, such as `devlanes.prod.yaml`, relative to `working-directory`. See [A second project file](#a-second-project-file). |
 | `home` | `~/.devlanes` | `DEVLANES_HOME`. The action exports it, so later `devlanes` commands reach the same daemon. |
 | `config` | | YAML merged into the user `config.yaml` before the daemon starts, passed as a string such as a `\|` block (see [Lanes in CI](#lanes-in-ci)). Each setting goes through `devlanes config set`, which refuses unknown keys and invalid values. |
 | `trust` | `true` | On Linux, run `devlanes setup` to trust the devlanes CA in the system store and in the NSS store that Chromium reads. See [HTTPS](#https). |
@@ -214,6 +215,20 @@ Each shard runs its own lane on its own runner, and its logs artifact carries th
   with:
     working-directory: apps/storefront
 ```
+
+### A second project file
+
+End-to-end tests often run against a production build rather than the dev servers. When that build has its own project file, as in [Run dev servers and a production build side by side](https://devlanes.run/docs/how-to/projects/dev-and-prod/), point `file` at it:
+
+```yaml
+- uses: devlanes-run/action@v0
+  with:
+    file: devlanes.prod.yaml
+    profile: e2e
+- run: pnpm test:e2e
+```
+
+The action passes `--file devlanes.prod.yaml` to every devlanes command about the lane, the post step's included. The lane, the outputs and the default artifact name, such as `devlanes-logs-e2e-myapp-prod-0`, come from that file's `project`, so a job can start both files without their logs colliding. The version still comes from the lockfile as usual.
 
 ### Two projects in one job
 

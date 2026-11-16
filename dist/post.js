@@ -22,7 +22,11 @@ import { cli, getInput, shouldUpload, uploadLogs, core_info, logs_artifactName, 
     }
     // The home this invocation used, even when a later use of the action exported another one.
     const devlanes = cli(state.bin, childEnv(process.env, state.home));
-    const reference = inputs.command === 'install' ? '' : state.lane || await currentLane(devlanes, state.cwd);
+    const project = {
+        cwd: state.cwd,
+        file: inputs.file
+    };
+    const reference = inputs.command === 'install' ? '' : state.lane || await currentLane(devlanes, project);
     // A later `command: stop` step already stopped this lane and uploaded its logs.
     const stopped = reference !== '' && stoppedLanes(process.env).includes(reference);
     // Empty when the main step failed before it read the lane.
@@ -33,9 +37,7 @@ import { cli, getInput, shouldUpload, uploadLogs, core_info, logs_artifactName, 
             const page = await devlanes.json([
                 'status',
                 reference
-            ], {
-                cwd: state.cwd
-            });
+            ], project);
             return page.items.find((item)=>item.reference === reference) ?? page.items[0];
         });
         if (failedUnits(lane).length > 0) failed = true;
@@ -49,7 +51,7 @@ import { cli, getInput, shouldUpload, uploadLogs, core_info, logs_artifactName, 
                 '--logs-dir',
                 state.logsDir
             ], {
-                cwd: state.cwd,
+                ...project,
                 stream: true
             });
             if (result.code !== 0) {
@@ -75,12 +77,12 @@ import { cli, getInput, shouldUpload, uploadLogs, core_info, logs_artifactName, 
             'clean',
             reference,
             '--yes'
-        ], state.cwd);
+        ], project);
         await run(devlanes, [
             'infra',
             'down',
             '--yes'
-        ], state.cwd);
+        ], project);
     }
     if (state.hostsLane) {
         await attempt('remove the hostnames from the hosts file', ()=>removeHosts(process.platform, hostsPath(process.platform, process.env), state.hostsLane));
@@ -91,24 +93,20 @@ import { cli, getInput, shouldUpload, uploadLogs, core_info, logs_artifactName, 
         '--yes'
     ]);
 }
-/** Runs a devlanes command into the log, warning when it fails. */ async function run(devlanes, args, cwd) {
+/** Runs a devlanes command into the log, warning when it fails. */ async function run(devlanes, args, project = {}) {
     await attempt(`run devlanes ${args.join(' ')}`, async ()=>{
-        const result = await devlanes.run(args, cwd ? {
-            cwd,
-            stream: true
-        } : {
+        const result = await devlanes.run(args, {
+            ...project,
             stream: true
         });
         if (result.code !== 0) throw new Error(`it exited ${result.code}`);
     });
 }
-/** The lane of `cwd`, for a main step that ended before it could save it. */ async function currentLane(devlanes, cwd) {
+/** The lane of the project, for a main step that ended before it could save it. */ async function currentLane(devlanes, project) {
     const laneEnv = await attempt('read the lane', ()=>devlanes.json([
             'env',
             'show'
-        ], {
-            cwd
-        }));
+        ], project));
     return laneEnv?.lane ?? '';
 }
 /** Runs `task`, turning a failure into a warning that says what could not be done. */ async function attempt(what, task) {

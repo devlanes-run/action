@@ -7,7 +7,7 @@ import { join, resolve } from 'node:path';
 import * as core from '@actions/core';
 import { caFiles, caVariables } from './ca.ts';
 import { resolveVersion, versionMessage } from './detect.ts';
-import { cli, type Devlanes } from './devlanes.ts';
+import { cli, type Devlanes, type RunOptions } from './devlanes.ts';
 import { childEnv } from './env.ts';
 import { addHosts, hostsPath, laneHostnames, resolvesToLoopback } from './hosts.ts';
 import { type Inputs, readInputs } from './inputs.ts';
@@ -43,6 +43,12 @@ async function main(): Promise<void> {
   const inputs = readInputs((name) => core.getInput(name), process.platform);
   const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
   const cwd = resolve(workspace, inputs.workingDirectory);
+  // Checked before the install, which a typo in the path would otherwise wait for.
+  if (inputs.file && !existsSync(resolve(cwd, inputs.file))) {
+    throw new Error(`Input "file" names ${resolve(cwd, inputs.file)}, which does not exist`);
+  }
+  // Every command about the lane runs in the project's folder and with its file.
+  const project: RunOptions = { cwd, file: inputs.file };
 
   const resolved = resolveVersion(inputs.version, {
     start: cwd,
@@ -68,7 +74,7 @@ async function main(): Promise<void> {
   core.setOutput('version', printed.replace(/^devlanes\s+/, '') || installed.version);
 
   if (inputs.command === 'stop') {
-    await stop(devlanes(), inputs, cwd);
+    await stop(devlanes(), inputs, project);
     return;
   }
 
@@ -92,7 +98,7 @@ async function main(): Promise<void> {
   core.setOutput('home', state.home);
 
   // The lane exists before it starts, so its CA, logs folder and hostnames are known up front.
-  const laneEnv = inputs.command === 'install' ? null : await currentLane(devlanes(), cwd);
+  const laneEnv = inputs.command === 'install' ? null : await currentLane(devlanes(), project);
 
   // The lane names the CA files, which differ from the home's with `tls.ca: mkcert`.
   const fallback = caFiles(state.home);
@@ -124,10 +130,10 @@ async function main(): Promise<void> {
   core.setOutput('logs-dir', state.logsDir);
   saveState(state);
 
-  if (state.lane) await laneHosts(devlanes(), inputs, state, cwd);
+  if (state.lane) await laneHosts(devlanes(), inputs, state, project);
 
-  if (inputs.command === 'start') await start(devlanes(), inputs, state);
-  else await withCommand(devlanes(), inputs, state);
+  if (inputs.command === 'start') await start(devlanes(), inputs, state, project);
+  else await withCommand(devlanes(), inputs, state, project);
 }
 
 /**
@@ -188,11 +194,11 @@ async function laneHosts(
   devlanes: Devlanes,
   inputs: Inputs,
   state: State,
-  cwd: string
+  project: RunOptions
 ): Promise<void> {
   const platform = process.platform;
   if (platform === 'linux' || inputs.hostsFile === 'false') return;
-  const hosts = laneHostnames(await laneStatus(devlanes, state.lane, cwd));
+  const hosts = laneHostnames(await laneStatus(devlanes, state.lane, project));
   if (hosts.length === 0) return;
   if (inputs.hostsFile === 'auto' && (await resolvesToLoopback(hosts[0] ?? ''))) return;
 
@@ -218,10 +224,10 @@ function startFlags(inputs: Inputs): string[] {
   ];
 }
 
-/** The lane of the working directory, or null when devlanes cannot name it. */
-async function currentLane(devlanes: Devlanes, cwd: string): Promise<LaneEnv | null> {
+/** The lane of the project, or null when devlanes cannot name it. */
+async function currentLane(devlanes: Devlanes, project: RunOptions): Promise<LaneEnv | null> {
   try {
-    return await devlanes.json<LaneEnv>(['env', 'show'], { cwd });
+    return await devlanes.json<LaneEnv>(['env', 'show'], project);
   } catch (error) {
     core.warning(`Could not read the lane: ${message(error)}`);
     return null;
@@ -232,10 +238,10 @@ async function currentLane(devlanes: Devlanes, cwd: string): Promise<LaneEnv | n
 async function laneStatus(
   devlanes: Devlanes,
   lane: string,
-  cwd: string
+  project: RunOptions
 ): Promise<LaneSummary | undefined> {
   try {
-    const page = await devlanes.json<StatusPage>(['status', lane], { cwd });
+    const page = await devlanes.json<StatusPage>(['status', lane], project);
     return page.items.find((item) => item.reference === lane) ?? page.items[0];
   } catch (error) {
     core.warning(`Could not read the lane's status: ${message(error)}`);
@@ -244,13 +250,18 @@ async function laneStatus(
 }
 
 /** `command: start`: start the lane, then publish its URLs, ports and environment. */
-async function start(devlanes: Devlanes, inputs: Inputs, state: State): Promise<void> {
+async function start(
+  devlanes: Devlanes,
+  inputs: Inputs,
+  state: State,
+  project: RunOptions
+): Promise<void> {
   const result = await devlanes.run(['start', '--no-ui', ...startFlags(inputs), ...inputs.units], {
-    cwd: state.cwd,
+    ...project,
     stream: true
   });
 
-  const laneEnv = await currentLane(devlanes, state.cwd);
+  const laneEnv = await currentLane(devlanes, project);
   if (laneEnv) {
     core.setOutput('env', JSON.stringify(laneEnv.env));
     if (inputs.exportEnv) {
@@ -258,7 +269,7 @@ async function start(devlanes: Devlanes, inputs: Inputs, state: State): Promise<
     }
   }
   if (state.lane) {
-    const lane = await laneStatus(devlanes, state.lane, state.cwd);
+    const lane = await laneStatus(devlanes, state.lane, project);
     if (lane) {
       const services = serviceOutputs(lane);
       core.setOutput('lane-index', lane.index === null ? '' : String(lane.index));
@@ -268,7 +279,7 @@ async function start(devlanes: Devlanes, inputs: Inputs, state: State): Promise<
       core.setOutput('infra', JSON.stringify(infraOutputs(lane)));
     }
     try {
-      const port = httpsPort(await devlanes.json<HostsPage>(['url', 'ls'], { cwd: state.cwd }));
+      const port = httpsPort(await devlanes.json<HostsPage>(['url', 'ls'], project));
       core.setOutput('https-port', port === null ? '' : String(port));
     } catch (error) {
       core.warning(`Could not read the proxy's port: ${message(error)}`);
@@ -283,7 +294,12 @@ async function start(devlanes: Devlanes, inputs: Inputs, state: State): Promise<
 }
 
 /** `command: with`: start the lane, run the script against it and stop what was started. */
-async function withCommand(devlanes: Devlanes, inputs: Inputs, state: State): Promise<void> {
+async function withCommand(
+  devlanes: Devlanes,
+  inputs: Inputs,
+  state: State,
+  project: RunOptions
+): Promise<void> {
   const argv = await writeScript(
     inputs.shell,
     inputs.run,
@@ -302,7 +318,7 @@ async function withCommand(devlanes: Devlanes, inputs: Inputs, state: State): Pr
       '--',
       ...argv
     ],
-    { cwd: state.cwd, stream: true }
+    { ...project, stream: true }
   );
   core.setOutput('exit-code', String(result.code));
   state.withDone = true;
@@ -314,16 +330,16 @@ async function withCommand(devlanes: Devlanes, inputs: Inputs, state: State): Pr
 }
 
 /** `command: stop`: stop the lane now, write its logs and upload them. */
-async function stop(devlanes: Devlanes, inputs: Inputs, cwd: string): Promise<void> {
-  const laneEnv = await currentLane(devlanes, cwd);
-  if (!laneEnv) throw new Error(`No devlanes lane in ${cwd} to stop`);
+async function stop(devlanes: Devlanes, inputs: Inputs, project: RunOptions): Promise<void> {
+  const laneEnv = await currentLane(devlanes, project);
+  if (!laneEnv) throw new Error(`No devlanes lane in ${project.cwd} to stop`);
   const logsDir = laneLogsDir(process.env, laneEnv.lane);
   core.setOutput('lane', laneEnv.lane);
   core.setOutput('logs-dir', logsDir);
 
-  const lane = await laneStatus(devlanes, laneEnv.lane, cwd);
+  const lane = await laneStatus(devlanes, laneEnv.lane, project);
   const result = await devlanes.run(['stop', '--lane', laneEnv.lane, '--logs-dir', logsDir], {
-    cwd,
+    ...project,
     stream: true
   });
   let failed = result.code !== 0 || failedUnits(lane).length > 0;

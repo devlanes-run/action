@@ -3,7 +3,7 @@
 // Problems here are warnings, since the job's result belongs to its own steps.
 
 import * as core from '@actions/core';
-import { cli, type Devlanes } from './devlanes.ts';
+import { cli, type Devlanes, type RunOptions } from './devlanes.ts';
 import { childEnv } from './env.ts';
 import { hostsPath, removeHosts } from './hosts.ts';
 import { readInputs } from './inputs.ts';
@@ -24,8 +24,9 @@ async function post(): Promise<void> {
 
   // The home this invocation used, even when a later use of the action exported another one.
   const devlanes = cli(state.bin, childEnv(process.env, state.home));
+  const project: RunOptions = { cwd: state.cwd, file: inputs.file };
   const reference =
-    inputs.command === 'install' ? '' : state.lane || (await currentLane(devlanes, state.cwd));
+    inputs.command === 'install' ? '' : state.lane || (await currentLane(devlanes, project));
   // A later `command: stop` step already stopped this lane and uploaded its logs.
   const stopped = reference !== '' && stoppedLanes(process.env).includes(reference);
   // Empty when the main step failed before it read the lane.
@@ -34,7 +35,7 @@ async function post(): Promise<void> {
   if (reference && !stopped) {
     let failed = state.failed;
     const lane = await attempt('read the lane status', async () => {
-      const page = await devlanes.json<StatusPage>(['status', reference], { cwd: state.cwd });
+      const page = await devlanes.json<StatusPage>(['status', reference], project);
       return page.items.find((item) => item.reference === reference) ?? page.items[0];
     });
     if (failedUnits(lane).length > 0) failed = true;
@@ -44,7 +45,7 @@ async function post(): Promise<void> {
     if (inputs.command === 'start' || !state.withDone) {
       const result = await devlanes.run(
         ['stop', '--lane', reference, '--logs-dir', state.logsDir],
-        { cwd: state.cwd, stream: true }
+        { ...project, stream: true }
       );
       if (result.code !== 0) {
         failed = true;
@@ -66,8 +67,8 @@ async function post(): Promise<void> {
   }
 
   if (inputs.cleanup === 'clean' && reference) {
-    await run(devlanes, ['lane', 'clean', reference, '--yes'], state.cwd);
-    await run(devlanes, ['infra', 'down', '--yes'], state.cwd);
+    await run(devlanes, ['lane', 'clean', reference, '--yes'], project);
+    await run(devlanes, ['infra', 'down', '--yes'], project);
   }
 
   if (state.hostsLane) {
@@ -80,17 +81,17 @@ async function post(): Promise<void> {
 }
 
 /** Runs a devlanes command into the log, warning when it fails. */
-async function run(devlanes: Devlanes, args: string[], cwd?: string): Promise<void> {
+async function run(devlanes: Devlanes, args: string[], project: RunOptions = {}): Promise<void> {
   await attempt(`run devlanes ${args.join(' ')}`, async () => {
-    const result = await devlanes.run(args, cwd ? { cwd, stream: true } : { stream: true });
+    const result = await devlanes.run(args, { ...project, stream: true });
     if (result.code !== 0) throw new Error(`it exited ${result.code}`);
   });
 }
 
-/** The lane of `cwd`, for a main step that ended before it could save it. */
-async function currentLane(devlanes: Devlanes, cwd: string): Promise<string> {
+/** The lane of the project, for a main step that ended before it could save it. */
+async function currentLane(devlanes: Devlanes, project: RunOptions): Promise<string> {
   const laneEnv = await attempt('read the lane', () =>
-    devlanes.json<LaneEnv>(['env', 'show'], { cwd })
+    devlanes.json<LaneEnv>(['env', 'show'], project)
   );
   return laneEnv?.lane ?? '';
 }
