@@ -21,6 +21,7 @@ import {
   infraOutputs,
   type LaneEnv,
   type LaneSummary,
+  profileOutput,
   type StatusPage,
   serviceOutputs,
   urlOutputs
@@ -274,6 +275,7 @@ async function start(
       const services = serviceOutputs(lane);
       core.setOutput('lane-index', lane.index === null ? '' : String(lane.index));
       core.setOutput('domain', lane.domain ?? '');
+      core.setOutput('profile', profileOutput(lane));
       core.setOutput('services', JSON.stringify(services));
       core.setOutput('urls', JSON.stringify(urlOutputs(services)));
       core.setOutput('infra', JSON.stringify(infraOutputs(lane)));

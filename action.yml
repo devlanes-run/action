@@ -10,10 +10,10 @@ branding:
 inputs:
   version:
     description: >-
-      devlanes version to install: `latest`, `next` or a release of 0.11.0 or later. Empty reads
+      devlanes version to install: `latest`, `next` or a release of 0.14.0 or later. Empty reads
       the version from a lockfile (pnpm, npm, yarn, bun, uv, poetry) or an exact version in
       package.json, searching `working-directory` and each folder above it up to the workspace.
-      When no file names a version, the action installs 0.11.0, the release it was tested with.
+      When no file names a version, the action installs 0.14.0, the release it was tested with.
     required: false
     default: ""
   command:
@@ -160,10 +160,16 @@ outputs:
     description: The lane's domain, such as `acme.localhost`. Set by `start`.
   https-port:
     description: The port of the HTTPS proxy, 443 or a fallback such as 8443. Set by `start`.
+  profile:
+    description: >-
+      Profiles the lane started with, separated by commas, such as `e2e`. Empty when devlanes
+      reports none. Set by `start`.
   urls:
     description: >-
-      JSON object with each service's URL, through the proxy when the service has hostnames. Read
-      one with `fromJSON(steps.<id>.outputs.urls).api`. Set by `start`.
+      JSON object with the URL of each service that runs, through the proxy when the service has
+      hostnames. Services that are `idle`, `stopping`, `stopped` or `failed` are left out, since
+      the proxy does not start them on a request; `services` still lists them. Read one with
+      `fromJSON(steps.<id>.outputs.urls).api`. Set by `start`.
   services:
     description: >-
       JSON object with each service's `state`, `kind`, `port`, `ports`, `url`, `public_url` and

@@ -29,14 +29,14 @@ importers:
   .:
     devDependencies:
       devlanes:
-        specifier: ^0.11.0
-        version: 0.11.2
+        specifier: ^0.14.0
+        version: 0.14.2
 
   apps/web:
     dependencies:
       devlanes:
-        specifier: 0.11.1
-        version: 0.11.1(typescript@5.9.2)
+        specifier: 0.14.1
+        version: 0.14.1(typescript@5.9.2)
 
   apps/admin:
     dependencies:
@@ -46,21 +46,21 @@ importers:
 
 packages:
 
-  '@devlanes/linux-x64@0.11.2':
+  '@devlanes/linux-x64@0.14.2':
     resolution: {integrity: sha512-ps7b}
     cpu: [x64]
     os: [linux]
 
-  devlanes@0.11.2:
+  devlanes@0.14.2:
     resolution: {integrity: sha512-Y8T6}
     hasBin: true
 `;
 
 test('pnpm reads the importer of the folder, then the ones above it', () => {
-  assert.equal(pnpmLock(pnpm, '.'), '0.11.2');
-  assert.equal(pnpmLock(pnpm, 'apps/web'), '0.11.1');
-  assert.equal(pnpmLock(pnpm, 'apps/web/e2e'), '0.11.1');
-  assert.equal(pnpmLock(pnpm, 'apps/admin'), '0.11.2');
+  assert.equal(pnpmLock(pnpm, '.'), '0.14.2');
+  assert.equal(pnpmLock(pnpm, 'apps/web'), '0.14.1');
+  assert.equal(pnpmLock(pnpm, 'apps/web/e2e'), '0.14.1');
+  assert.equal(pnpmLock(pnpm, 'apps/admin'), '0.14.2');
 });
 
 test('pnpm drops the peer suffix and ignores lockfiles without devlanes', () => {
@@ -99,16 +99,16 @@ importers:
 
 ---
 ${pnpm}`;
-  assert.equal(pnpmLock(lock, '.'), '0.11.2');
+  assert.equal(pnpmLock(lock, '.'), '0.14.2');
 });
 
-test("the fixtures' lockfiles pin 0.11.0 and this repository's names no devlanes", async () => {
+test("the fixtures' lockfiles pin 0.14.0 and this repository's names no devlanes", async () => {
   const read = (path: string) => readFile(new URL(path, import.meta.url), 'utf8');
   assert.equal(
     pnpmLock(await read('../test/fixtures/lockfile-pnpm/pnpm-lock.yaml'), '.'),
-    '0.11.0'
+    '0.14.0'
   );
-  assert.equal(pythonLock(await read('../test/fixtures/lockfile-uv/uv.lock')), '0.11.0');
+  assert.equal(pythonLock(await read('../test/fixtures/lockfile-uv/uv.lock')), '0.14.0');
   // CI runs the other jobs without a version and expects the action's default.
   assert.equal(pnpmLock(await read('../pnpm-lock.yaml'), 'test/fixtures/basic'), null);
   assert.equal(packageJson(await read('../package.json')), null);
@@ -219,10 +219,10 @@ requires-dist = [{ name = "devlanes", specifier = ">=0.10" }]
 
 [[package]]
 name = "devlanes"
-version = "0.12.0rc1"
+version = "0.15.0rc1"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/devlanes-0.12.0rc1-py3-none-win_amd64.whl", hash = "sha256:b568", size = 21149517 },
+    { url = "https://files.pythonhosted.org/packages/devlanes-0.15.0rc1-py3-none-win_amd64.whl", hash = "sha256:b568", size = 21149517 },
 ]
 `;
 
@@ -246,7 +246,7 @@ content-hash = "abc"
 `;
 
 test('uv and poetry read the devlanes package', () => {
-  assert.equal(pythonLock(uv), '0.12.0-rc.1');
+  assert.equal(pythonLock(uv), '0.15.0-rc.1');
   assert.equal(pythonLock(poetry), '0.11.2');
   assert.equal(
     pythonLock('version = 1\n\n[[package]]\nname = "httpx"\nversion = "0.28.1"\n'),
@@ -299,18 +299,18 @@ function search(files: Record<string, string>, start = '.', warnings: string[] =
 test('the input wins over a lockfile, which wins over package.json and the default', () => {
   const files = {
     'pnpm-lock.yaml': pnpm,
-    'package.json': JSON.stringify({ devDependencies: { devlanes: '0.11.1' } })
+    'package.json': JSON.stringify({ devDependencies: { devlanes: '0.14.1' } })
   };
   assert.deepEqual(resolveVersion('latest', search(files)), { version: 'latest', source: 'input' });
   assert.deepEqual(resolveVersion('', search(files)), {
-    version: '0.11.2',
+    version: '0.14.2',
     source: 'pnpm-lock.yaml'
   });
   assert.deepEqual(resolveVersion('', search({ 'package.json': files['package.json'] })), {
-    version: '0.11.1',
+    version: '0.14.1',
     source: 'package.json'
   });
-  const range = JSON.stringify({ devDependencies: { devlanes: '^0.11.0' } });
+  const range = JSON.stringify({ devDependencies: { devlanes: '^0.14.0' } });
   assert.deepEqual(resolveVersion('', search({ 'package.json': range })), {
     version: defaultVersion,
     source: 'default'
@@ -320,14 +320,14 @@ test('the input wins over a lockfile, which wins over package.json and the defau
 test('the nearest folder wins and the search stops at the workspace', () => {
   const files = {
     'uv.lock': uv,
-    'apps/web/package.json': JSON.stringify({ devDependencies: { devlanes: '0.11.1' } })
+    'apps/web/package.json': JSON.stringify({ devDependencies: { devlanes: '0.14.1' } })
   };
   assert.deepEqual(pinnedVersion(search(files, 'apps/web/e2e')), {
-    version: '0.11.1',
+    version: '0.14.1',
     source: 'apps/web/package.json'
   });
   assert.deepEqual(pinnedVersion(search(files, 'apps/admin')), {
-    version: '0.12.0-rc.1',
+    version: '0.15.0-rc.1',
     source: 'uv.lock'
   });
 
@@ -346,10 +346,10 @@ test('a file that cannot be parsed is skipped with a warning', () => {
   const warnings: string[] = [];
   const files = {
     'pnpm-lock.yaml': 'importers: [unclosed',
-    'yarn.lock': 'devlanes@^0.11.0:\n  version "0.11.2"\n'
+    'yarn.lock': 'devlanes@^0.14.0:\n  version "0.14.2"\n'
   };
   assert.deepEqual(pinnedVersion(search(files, '.', warnings)), {
-    version: '0.11.2',
+    version: '0.14.2',
     source: 'yarn.lock'
   });
   assert.equal(warnings.length, 1);
@@ -359,14 +359,14 @@ test('a file that cannot be parsed is skipped with a warning', () => {
 test('a version that is not a release is skipped with a warning', () => {
   const warnings: string[] = [];
   const files = {
-    'apps/web/uv.lock': '[[package]]\nname = "devlanes"\nversion = "0.11.0.dev1"\n',
-    'package.json': JSON.stringify({ devDependencies: { devlanes: '0.11.1' } })
+    'apps/web/uv.lock': '[[package]]\nname = "devlanes"\nversion = "0.14.0.dev1"\n',
+    'package.json': JSON.stringify({ devDependencies: { devlanes: '0.14.1' } })
   };
   assert.deepEqual(pinnedVersion(search(files, 'apps/web', warnings)), {
-    version: '0.11.1',
+    version: '0.14.1',
     source: 'package.json'
   });
-  assert.match(warnings[0] ?? '', /apps\/web\/uv\.lock names devlanes 0\.11\.0\.dev1/);
+  assert.match(warnings[0] ?? '', /apps\/web\/uv\.lock names devlanes 0\.14\.0\.dev1/);
 });
 
 test('a pinned version older than the minimum fails with the file name', () => {
@@ -375,12 +375,12 @@ importers:
   .:
     devDependencies:
       devlanes:
-        specifier: 0.9.0
-        version: 0.9.0
+        specifier: 0.13.3
+        version: 0.13.3
 `;
   assert.throws(
     () => resolveVersion('', search({ 'pnpm-lock.yaml': lock })),
-    /^Error: pnpm-lock\.yaml pins devlanes 0\.9\.0, which is too old for this action; pin 0\.11\.0 or later or set version$/
+    /^Error: pnpm-lock\.yaml pins devlanes 0\.13\.3, which is too old for this action; pin 0\.14\.0 or later or set version$/
   );
 });
 
@@ -390,8 +390,8 @@ test('the log says where the version came from', () => {
     'Installing devlanes 0.11.2 from pnpm-lock.yaml'
   );
   assert.equal(
-    versionMessage({ version: '0.11.0', source: 'default' }),
-    "Installing devlanes 0.11.0, the action's default (no lockfile names devlanes)"
+    versionMessage({ version: '0.14.0', source: 'default' }),
+    "Installing devlanes 0.14.0, the action's default (no lockfile names devlanes)"
   );
   assert.equal(
     versionMessage({ version: 'next', source: 'input' }),

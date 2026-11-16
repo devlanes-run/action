@@ -4,15 +4,15 @@ requires-python = ">=3.9"
 
 [[package]]
 name = "devlanes"
-version = "0.11.0"
+version = "0.14.0"
 source = { registry = "https://pypi.org/simple" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dd/cc/b7b7c5cd669f8f6b2420a3feda428f8bfba173999a06458683608216de20/devlanes-0.11.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:bdfb5ca0e987fd6ca123f6a1ab2496c7fe26a1bfa93dd1da636f5345c2ff0523", size = 21120863, upload-time = "2026-11-01T23:46:57.445Z" },
-    { url = "https://files.pythonhosted.org/packages/c2/13/7919882e39db1594859438936c24ad188ac99a45946a43f2150eb146ecca/devlanes-0.11.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:51d9ace4b7662158cbe3c49d3b725b046f5b42afce199639ab4bca7cb60cb9ea", size = 19579683, upload-time = "2026-11-01T23:47:00.488Z" },
-    { url = "https://files.pythonhosted.org/packages/0c/ce/c0574d4b0a89f45aab304411b0ea039c24791bc4c7f6b1095b99e56161fe/devlanes-0.11.0-py3-none-manylinux_2_35_aarch64.whl", hash = "sha256:f7d9340256c1694ef780a9d21bdd1e5b1f03750b5941d82a996f9fd6f59f3c0f", size = 20272076, upload-time = "2026-11-01T23:47:03.777Z" },
-    { url = "https://files.pythonhosted.org/packages/45/c9/aa11552754965cb5e6ab9fc38c098bfe30f6061ae0ed46f01d0999cc1e14/devlanes-0.11.0-py3-none-manylinux_2_35_x86_64.whl", hash = "sha256:1c6b8a6c490fdb4f49b7f8e8da994272e3e422040c640136f4af178d189f1de5", size = 21877930, upload-time = "2026-11-01T23:47:07.03Z" },
-    { url = "https://files.pythonhosted.org/packages/25/ba/067595832e1d376267d863638c007504ed7d63e04ac89e871342df27eb4a/devlanes-0.11.0-py3-none-win_amd64.whl", hash = "sha256:887fe95b775650f0152c61f52524e9b8258ae50266851c26ac75329f225d3982", size = 22356975, upload-time = "2026-11-01T23:47:10.35Z" },
-    { url = "https://files.pythonhosted.org/packages/9d/2d/ffd4e7e2144c74c015c7406911ff3a7d1aba4e2a8b9501e410655841e78d/devlanes-0.11.0-py3-none-win_arm64.whl", hash = "sha256:a86a47874541f2eb12c5fb8975ce2f7aad659201c62a6748b7bbf061e6773b19", size = 20527010, upload-time = "2026-11-01T23:47:13.312Z" },
+    { url = "https://files.pythonhosted.org/packages/12/f9/596fcec030d0f23e8c2d5bb5773cbaf1f76148f5eacb4840e6ca3982f7f1/devlanes-0.14.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:e9707a98384a5dd0136a7bf0cbe0d44216169471a0f0c9a9ac74798765401b20", size = 22658482, upload-time = "2026-11-16T12:19:02.767Z" },
+    { url = "https://files.pythonhosted.org/packages/78/3c/cde35b703f5c6453f0196f711c1f904bb7371939cbec981f8794f39777cc/devlanes-0.14.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:7037b9d12627a877cf6f4f300e04ab6875f2a75401a405036f6fc6e317097c21", size = 21008320, upload-time = "2026-11-16T12:19:05.921Z" },
+    { url = "https://files.pythonhosted.org/packages/29/b2/cd3354ef73c1c08036c8289823cd82d35da860a6f2a1088748fb2bed329d/devlanes-0.14.0-py3-none-manylinux_2_35_aarch64.whl", hash = "sha256:7b17b0280db3588ab0761c808ba59aef94a26d2dbde07826756ff5698e1718aa", size = 21613854, upload-time = "2026-11-16T12:19:08.822Z" },
+    { url = "https://files.pythonhosted.org/packages/1a/3a/dead7b4f6a8232c540b79a9ace33e71c69a52b278d6128ddc2d4ccac0612/devlanes-0.14.0-py3-none-manylinux_2_35_x86_64.whl", hash = "sha256:5228b3a9eb14fba72abb13ad3a5f968e8cb1ac3ecebfabbc0b8db5fd725f2e04", size = 23438009, upload-time = "2026-11-16T12:19:11.601Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/96/e393c99513a92c5365c941280ebe68543faf5a18872591cda64d9b15d252/devlanes-0.14.0-py3-none-win_amd64.whl", hash = "sha256:0e9e1a2adf83ff0d5106710dc5a6d7eb23596ef36e6dbd557058640ba1a4da82", size = 23690660, upload-time = "2026-11-16T12:19:14.838Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/47/50d69ca75e10abbef498dc854e56ae707b6d4a79aa61176a335c419fdb53/devlanes-0.14.0-py3-none-win_arm64.whl", hash = "sha256:05924d0ff93f334a55a376b1159a16899d8aee4906e37bfbe27bc10210ac5393", size = 21735191, upload-time = "2026-11-16T12:19:17.723Z" },
 ]
 
 [[package]]
@@ -24,4 +24,4 @@ dependencies = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "devlanes", specifier = ">=0.11.0,<0.11.1" }]
+requires-dist = [{ name = "devlanes", specifier = ">=0.14.0,<0.14.1" }]

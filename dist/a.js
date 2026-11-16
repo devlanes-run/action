@@ -82728,11 +82728,11 @@ const hostsModes = [
 /**
  * The devlanes version this release of the action was tested with, installed when neither the
  * `version` input nor the project's files name one.
- */ const defaultVersion = '0.11.0';
+ */ const defaultVersion = '0.14.0';
 /**
- * The oldest devlanes the action supports: it runs `devlanes setup` (0.10.0) and exports the
- * lane's project as `DEVLANES_LANE_PROJECT` (0.11.0). Its CI runs against nothing older.
- */ const minimumVersion = '0.11.0';
+ * The oldest devlanes the action supports: the first release whose hosts helper writes a sudo
+ * rule that current runners' visudo accepts (devlanes #203). Its CI runs against nothing older.
+ */ const minimumVersion = '0.14.0';
 /** A bare release version, `X.Y.Z[-pre]`, in lower case. */ const releasePattern = /^\d+\.\d+\.\d+(-[0-9a-z.-]+)?$/;
 /**
  * A `version` input normalized to `latest`, `next` or a bare `X.Y.Z[-pre]`. Empty stays empty,
@@ -144447,6 +144447,25 @@ const artifact_client = new DefaultArtifactClient();
     'service',
     'external'
 ]);
+/**
+ * Service states the proxy answers with an error page instead of the service: it does not start
+ * an idle or stopped service on a request.
+ */ const notRunning = new Set([
+    'idle',
+    'stopping',
+    'stopped',
+    'failed'
+]);
+/**
+ * The profiles of the lane's last start, separated by commas like the `profile` input, or empty
+ * when the daemon reports none.
+ */ function profileOutput(lane) {
+    // `profile` is only the first of `profiles`; older daemons may send just `profile`.
+    const profiles = lane.profiles?.length ? lane.profiles : lane.profile ? [
+        lane.profile
+    ] : [];
+    return profiles.join(',');
+}
 /** Services of a lane by name, with the loopback URL next to the public one. */ function serviceOutputs(lane) {
     const services = {};
     for (const unit of lane.units ?? []){
@@ -144469,9 +144488,11 @@ const artifact_client = new DefaultArtifactClient();
 /**
  * The URL a test should use for each service: the public one through the proxy when the service
  * has hostnames, else its loopback URL, the same rule as `DEVLANES_PUBLIC_URL_<SERVICE>`.
+ * Services that do not run are left out, since nothing answers on their URLs.
  */ function urlOutputs(services) {
     const urls = {};
     for (const [name, service] of Object.entries(services)){
+        if (notRunning.has(service.state)) continue;
         const url = service.public_url ?? service.url;
         if (url) urls[name] = url;
     }
@@ -144517,4 +144538,4 @@ const state_key = 'devlanes';
     return (env[stoppedVariable] ?? '').split('\n').filter(Boolean);
 }
 
-export { addHosts, addPath, childEnv, cli, compareVersions, core_debug, core_group, core_info, core_warning, exec_exec, exportVariable, failedUnits, getInput, hostsPath, httpsPort, infraOutputs, io_cp, isDebug, jobFailed, laneHostnames, laneLogsDir, lib_HttpClient, loadState, logs_artifactName, mkdirP, parseJson, readInputs, readyVariable, releasePattern, removeHosts, resolvesToLoopback, rmRF, serviceOutputs, setFailed, setOutput, shouldUpload, state_saveState, stoppedLanes, stoppedVariable, uploadLogs, urlOutputs, which, writeDiagnostics };
+export { addHosts, addPath, childEnv, cli, compareVersions, core_debug, core_group, core_info, core_warning, exec_exec, exportVariable, failedUnits, getInput, hostsPath, httpsPort, infraOutputs, io_cp, isDebug, jobFailed, laneHostnames, laneLogsDir, lib_HttpClient, loadState, logs_artifactName, mkdirP, parseJson, profileOutput, readInputs, readyVariable, releasePattern, removeHosts, resolvesToLoopback, rmRF, serviceOutputs, setFailed, setOutput, shouldUpload, state_saveState, stoppedLanes, stoppedVariable, uploadLogs, urlOutputs, which, writeDiagnostics };
