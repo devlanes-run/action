@@ -1,7 +1,7 @@
 # The Marketplace refuses a name that matches another GitHub account, and `devlanes` is a user
 # that is not the project's.
 name: Run devlanes
-description: Install devlanes, start a project's services, containers and tasks, and stop them with their logs at the end of the job.
+description: Install devlanes and run a project's lane for the job, then stop it and upload its logs if the job failed.
 author: devlanes
 branding:
   icon: layers
@@ -10,135 +10,136 @@ branding:
 inputs:
   version:
     description: >-
-      devlanes version to install: `latest`, `next` or a release such as `0.11.0`, the oldest
-      the action supports. Empty reads the version from the project's lockfile (pnpm, npm, yarn,
-      bun, uv, poetry) or an exact version in package.json, searching `working-directory` and
-      the folders above it up to the workspace, else uses 0.11.0, the release this version of
-      the action was tested with.
+      devlanes version to install: `latest`, `next` or a release of 0.11.0 or later. Empty reads
+      the version from a lockfile (pnpm, npm, yarn, bun, uv, poetry) or an exact version in
+      package.json, searching `working-directory` and each folder above it up to the workspace.
+      When no file names a version, the action installs 0.11.0, the release it was tested with.
     required: false
     default: ""
   command:
     description: >-
-      What to do after installing: `start` brings up the lane and leaves it running for later
-      steps, `with` runs `run` against the lane and stops it, `stop` stops the lane now and writes
-      its logs, `install` only installs and prepares devlanes.
+      What to do after installing. `start` starts the lane and leaves it running for later steps.
+      `with` starts the lane, runs `run` against it and stops it. `stop` stops the lane now and
+      writes its logs. `install` only installs devlanes, prepares the runner and starts the
+      daemon.
     required: false
     default: start
   run:
     description: >-
-      Script to run against the lane with `command: with`. It runs in `working-directory` with the
-      lane's environment, such as `DEVLANES_PUBLIC_URL_<SERVICE>`.
+      Script for `command: with`. It runs in `working-directory` with the lane's environment, such
+      as `DEVLANES_PUBLIC_URL_<SERVICE>`.
     required: false
     default: ""
   shell:
     description: >-
-      Shell for `run`: `bash`, `sh`, `pwsh`, `powershell` or `cmd`. Defaults to `bash` on Linux and
-      macOS and `pwsh` on Windows, like `run:` steps.
+      Shell for `run`: `bash`, `sh`, `pwsh`, `powershell` or `cmd`. Empty uses `bash` on Linux and
+      macOS and `pwsh` on Windows, as `run:` steps do.
     required: false
     default: ""
   profile:
-    description: Profiles from devlanes.yaml to start, separated by commas or newlines.
+    description: Profiles to start, separated by commas or newlines.
     required: false
     default: ""
   units:
     description: >-
       Units to start, separated by spaces or newlines, such as `api web` or `+api`. Without units
-      or profiles, devlanes starts what the lane ran before, else its `default` profile.
+      or profiles, devlanes starts what the lane ran before, or else its `default` profile.
     required: false
     default: ""
   timeout:
-    description: How long to wait for every unit to be ready, such as `5m`. devlanes waits 180s by default.
+    description: How long to wait for every unit to be ready, such as `5m`. Empty waits 180s.
     required: false
     default: ""
   working-directory:
-    description: Directory that contains devlanes.yaml, relative to the workspace.
+    description: Folder with the project file, relative to the workspace.
     required: false
     default: "."
   file:
     description: >-
-      Project file to use instead of the nearest devlanes.yaml, such as `devlanes.prod.yaml`,
-      relative to `working-directory`. Passed as `--file` to every devlanes command about the
-      lane, including the post step's.
+      Project file to use instead of devlanes.yaml, such as `devlanes.prod.yaml`, relative to
+      `working-directory`. The action passes it as `--file` to every devlanes command it runs on
+      the lane, in the main step and in the post step.
     required: false
     default: ""
   home:
     description: >-
-      `DEVLANES_HOME` for this job. Empty keeps devlanes' default, `~/.devlanes`. Exported, so
-      later devlanes commands reach the same daemon.
+      `DEVLANES_HOME` for the job. Empty keeps devlanes' default, `~/.devlanes`. The action
+      exports it, so later
+      devlanes commands reach the same daemon.
     required: false
     default: ""
   config:
     description: >-
-      YAML merged into the user config.yaml before the daemon starts, passed as a string such as
-      a `|` block. Only the first use of the action in a job applies it.
+      YAML merged into the user config.yaml before the daemon starts, such as a `|` block. Only
+      the first use of the action in a job applies it.
     required: false
     default: ""
   trust:
     description: >-
-      On Linux, run `devlanes setup`, which trusts the devlanes CA in the system store and in the
-      NSS store that Chromium reads. macOS and Windows runners cannot, and get a warning. Only the
-      first use of the action in a job applies it.
+      On Linux, run `devlanes setup` to trust the devlanes CA in the system store and in the NSS
+      store that Chromium reads. macOS and Windows runners skip it with a warning. Only the first
+      use of the action in a job applies it.
     required: false
     default: "true"
   hosts-file:
     description: >-
-      Hosts file entries for the lane's hostnames: `auto`, `true` or `false`. On Windows and macOS,
-      `auto` writes them when `*.localhost` does not resolve and `true` always does. On Linux,
-      `devlanes setup` installs devlanes' /etc/hosts helper for programs that skip the system
+      Whether the lane's hostnames go into the hosts file: `auto`, `true` or `false`. On Windows and
+      macOS, `auto` adds them when `*.localhost` does not resolve and `true` always adds them. On
+      Linux, `devlanes setup` installs the /etc/hosts helper for programs that skip the system
       resolver, such as Wrangler's workerd: with `auto` when `*.localhost` does not resolve, with
-      `true` always (`devlanes setup` then runs even with `trust: false` and trusts the CA too),
-      with `false` never. A `hostnames.hosts_file` in `config` wins. On Linux only the first use
-      in a job applies it.
+      `true` always, with `false` never. `true` runs setup even with `trust: false`, which then
+      trusts the CA as well. A `hostnames.hosts_file` in `config` overrides this input. On Linux
+      only the first use of the action in a job applies it.
     required: false
     default: auto
   low-ports:
     description: >-
-      On Linux, let the proxy listen on 443 and 80, so public URLs carry no port. Only the first
-      use of the action in a job applies it.
+      On Linux, let the proxy listen on 443 and 80 so public URLs have no port. Only the first use
+      of the action in a job applies it.
     required: false
     default: "true"
   export-env:
     description: >-
-      With `command: start`, give later steps the lane's variables, such as
-      `DEVLANES_PUBLIC_URL_<SERVICE>`.
+      With `command: start`, export the lane's variables, such as `DEVLANES_PUBLIC_URL_<SERVICE>`,
+      to later steps.
     required: false
     default: "true"
   export-ca:
     description: >-
       Set `NODE_EXTRA_CA_CERTS`, `DENO_CERT`, `SSL_CERT_FILE` and `REQUESTS_CA_BUNDLE` for later
-      steps and the `with` script, so Node, Deno, Python and tools built on OpenSSL trust the
+      steps and the `with` script, so Node, Deno, Python and OpenSSL-based tools trust the
       devlanes CA on every OS.
     required: false
     default: "true"
   upload-logs:
     description: >-
-      When the logs are uploaded as an artifact: `on-failure`, `always` (or `true`) or `never` (or
-      `false`). `on-failure` uploads when any step of the job failed or a unit had failed.
+      When to upload the logs as an artifact: `on-failure`, `always` (or `true`) or `never` (or
+      `false`). `on-failure` uploads when a step of the job failed or a unit failed.
     required: false
     default: on-failure
   artifact-name:
     description: >-
-      Name of the logs artifact. Defaults to `devlanes-logs-<job name>-<lane>`, such as
-      `devlanes-logs-e2e-ubuntu-latest-acme-0`, which differs between matrix jobs and projects;
-      when the API cannot name the job, the runner's name takes its place.
+      Name of the logs artifact. Empty uses `devlanes-logs-<job name>-<lane>`, such as
+      `devlanes-logs-e2e-ubuntu-latest-acme-0`, which differs between matrix jobs and between
+      projects. When the API cannot read the job's name, the runner's name replaces it.
     required: false
     default: ""
   retention-days:
-    description: Days to keep the logs artifact. Empty keeps the repository's setting.
+    description: Days to keep the logs artifact. Empty uses the repository's setting.
     required: false
     default: ""
   cleanup:
     description: >-
-      What the end of the job does: `stop` stops the lane and the daemon this step started,
-      `clean` also runs `devlanes lane clean` and `devlanes infra down` (for self-hosted runners),
-      `keep` leaves everything running and uploads no logs.
+      What happens at the end of the job. `stop` stops the lane, and the daemon if this step
+      started it. `clean` also runs `devlanes lane clean` and `devlanes infra down`, for
+      self-hosted runners. `keep` leaves everything running and uploads no logs.
     required: false
     default: stop
   token:
     description: >-
-      Token for reading this job from the GitHub API, which tells `upload-logs: on-failure` whether
-      a step failed and names the default artifact. Rarely needs changing; private repositories
-      need `actions: read` in the job's permissions.
+      Token for reading the job from the GitHub API, to find failed steps for
+      `upload-logs: on-failure` and to name the default artifact. Private repositories need
+      `actions: read` in the job's permissions.
     required: false
     default: ${{ github.token }}
 
@@ -147,51 +148,44 @@ outputs:
     description: The installed devlanes version.
   version-source:
     description: >-
-      Where the version came from: `input`, the path of the lockfile or package.json that pins it,
-      relative to the workspace (such as `pnpm-lock.yaml`), or `default`.
+      Where the version came from: `input`, `default`, or the path of the file that pins it,
+      relative to the workspace, such as `pnpm-lock.yaml`.
   home:
-    description: The devlanes home in use. Set by every command but `stop`.
+    description: The devlanes home. Set by every command but `stop`.
   lane:
     description: The lane reference, such as `acme@0`. Set by `start`, `with` and `stop`.
   lane-index:
-    description: >-
-      The lane number. Set by `command: start`.
+    description: The lane number. Set by `start`.
   domain:
-    description: >-
-      The lane's domain, such as `acme.localhost`. Set by `command: start`.
+    description: The lane's domain, such as `acme.localhost`. Set by `start`.
   https-port:
-    description: >-
-      The port the HTTPS proxy listens on, 443 or a fallback such as 8443. Set by
-      `command: start`.
+    description: The port of the HTTPS proxy, 443 or a fallback such as 8443. Set by `start`.
   urls:
     description: >-
-      JSON object of each service's URL, through the proxy when it has hostnames. Read one with
-      `fromJSON(steps.<id>.outputs.urls).api`. Set by `command: start`.
+      JSON object with each service's URL, through the proxy when the service has hostnames. Read
+      one with `fromJSON(steps.<id>.outputs.urls).api`. Set by `start`.
   services:
     description: >-
-      JSON object of each service's `state`, `kind`, `port`, `ports`, `url`, `public_url` and
-      `urls`. Set by `command: start`.
+      JSON object with each service's `state`, `kind`, `port`, `ports`, `url`, `public_url` and
+      `urls`. Set by `start`.
   infra:
     description: >-
-      JSON object of each container's `state`, `shared`, `ports` and `urls`; `ports` maps the
-      container port (Compose) or port name (plain containers) to the host port. Set by
-      `command: start`.
+      JSON object with each container's `state`, `shared`, `ports` and `urls`. `ports` maps the
+      container port (Compose) or port name (plain containers) to the host port. Set by `start`.
   env:
-    description: >-
-      JSON object of the lane's environment variables. Set by `command: start`.
+    description: JSON object with the lane's environment variables. Set by `start`.
   ca-cert:
     description: Path of the devlanes CA certificate. Set by every command but `stop`.
   ca-bundle:
     description: >-
-      Path of the bundle with the system roots and the devlanes CA. Set by every command but
-      `stop`.
+      Path of a bundle with the system roots and the devlanes CA. Set by every command but `stop`.
   logs-dir:
     description: >-
-      Folder of the lane's logs, written when the lane stops. Set by `start`, `with` and `stop`.
+      Folder where the lane's logs are written when it stops. Set by `start`, `with` and `stop`.
   exit-code:
     description: >-
-      Exit code of `devlanes with`: the script's code, or 1 when the lane failed to start and the
-      script did not run. Set by `command: with`.
+      Exit code of `devlanes with`: the script's code, or 1 when the lane did not start and the
+      script did not run. Set by `with`.
 
 runs:
   using: node24
