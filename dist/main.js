@@ -13846,6 +13846,15 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
     const inputs = readInputs((name)=>getInput(name), process.platform);
     const workspace = process.env.GITHUB_WORKSPACE ?? process.cwd();
     const cwd = external_node_path_resolve(workspace, inputs.workingDirectory);
+    // Checked before the install, which a typo in the path would otherwise wait for.
+    if (inputs.file && !existsSync(external_node_path_resolve(cwd, inputs.file))) {
+        throw new Error(`Input "file" names ${external_node_path_resolve(cwd, inputs.file)}, which does not exist`);
+    }
+    // Every command about the lane runs in the project's folder and with its file.
+    const project = {
+        cwd,
+        file: inputs.file
+    };
     const resolved = resolveVersion(inputs.version, {
         start: cwd,
         workspace,
@@ -13867,7 +13876,7 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
     ])).stdout.trim();
     setOutput('version', printed.replace(/^devlanes\s+/, '') || installed.version);
     if (inputs.command === 'stop') {
-        await stop(devlanes(), inputs, cwd);
+        await stop(devlanes(), inputs, project);
         return;
     }
     const daemonStarted = await prepare(devlanes(), inputs);
@@ -13888,7 +13897,7 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
     state_saveState(state);
     setOutput('home', state.home);
     // The lane exists before it starts, so its CA, logs folder and hostnames are known up front.
-    const laneEnv = inputs.command === 'install' ? null : await currentLane(devlanes(), cwd);
+    const laneEnv = inputs.command === 'install' ? null : await currentLane(devlanes(), project);
     // The lane names the CA files, which differ from the home's with `tls.ca: mkcert`.
     const fallback = caFiles(state.home);
     const ca = {
@@ -13917,9 +13926,9 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
     state.logsDir = laneLogsDir(process.env, state.lane);
     setOutput('logs-dir', state.logsDir);
     state_saveState(state);
-    if (state.lane) await laneHosts(devlanes(), inputs, state, cwd);
-    if (inputs.command === 'start') await main_start(devlanes(), inputs, state);
-    else await withCommand(devlanes(), inputs, state);
+    if (state.lane) await laneHosts(devlanes(), inputs, state, project);
+    if (inputs.command === 'start') await main_start(devlanes(), inputs, state, project);
+    else await withCommand(devlanes(), inputs, state, project);
 }
 /**
  * Configures the runner and starts the daemon, once per job. Returns whether this step started
@@ -13976,10 +13985,10 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
 /**
  * Adds the lane's hostnames to the hosts file on Windows and macOS when they do not resolve,
  * before anything calls them, and records it so the post step removes them.
- */ async function laneHosts(devlanes, inputs, state, cwd) {
+ */ async function laneHosts(devlanes, inputs, state, project) {
     const platform = process.platform;
     if (platform === 'linux' || inputs.hostsFile === 'false') return;
-    const hosts = laneHostnames(await laneStatus(devlanes, state.lane, cwd));
+    const hosts = laneHostnames(await laneStatus(devlanes, state.lane, project));
     if (hosts.length === 0) return;
     if (inputs.hostsFile === 'auto' && await resolvesToLoopback(hosts[0] ?? '')) return;
     // Recorded first: a write that fails halfway may still have changed the file, and removing a
@@ -14005,44 +14014,40 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
             ])
     ];
 }
-/** The lane of the working directory, or null when devlanes cannot name it. */ async function currentLane(devlanes, cwd) {
+/** The lane of the project, or null when devlanes cannot name it. */ async function currentLane(devlanes, project) {
     try {
         return await devlanes.json([
             'env',
             'show'
-        ], {
-            cwd
-        });
+        ], project);
     } catch (error) {
         core_warning(`Could not read the lane: ${main_message(error)}`);
         return null;
     }
 }
-/** The status of one lane, or undefined when devlanes cannot report it. */ async function laneStatus(devlanes, lane, cwd) {
+/** The status of one lane, or undefined when devlanes cannot report it. */ async function laneStatus(devlanes, lane, project) {
     try {
         const page = await devlanes.json([
             'status',
             lane
-        ], {
-            cwd
-        });
+        ], project);
         return page.items.find((item)=>item.reference === lane) ?? page.items[0];
     } catch (error) {
         core_warning(`Could not read the lane's status: ${main_message(error)}`);
         return undefined;
     }
 }
-/** `command: start`: start the lane, then publish its URLs, ports and environment. */ async function main_start(devlanes, inputs, state) {
+/** `command: start`: start the lane, then publish its URLs, ports and environment. */ async function main_start(devlanes, inputs, state, project) {
     const result = await devlanes.run([
         'start',
         '--no-ui',
         ...startFlags(inputs),
         ...inputs.units
     ], {
-        cwd: state.cwd,
+        ...project,
         stream: true
     });
-    const laneEnv = await currentLane(devlanes, state.cwd);
+    const laneEnv = await currentLane(devlanes, project);
     if (laneEnv) {
         setOutput('env', JSON.stringify(laneEnv.env));
         if (inputs.exportEnv) {
@@ -14050,7 +14055,7 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
         }
     }
     if (state.lane) {
-        const lane = await laneStatus(devlanes, state.lane, state.cwd);
+        const lane = await laneStatus(devlanes, state.lane, project);
         if (lane) {
             const services = serviceOutputs(lane);
             setOutput('lane-index', lane.index === null ? '' : String(lane.index));
@@ -14063,9 +14068,7 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
             const port = httpsPort(await devlanes.json([
                 'url',
                 'ls'
-            ], {
-                cwd: state.cwd
-            }));
+            ], project));
             setOutput('https-port', port === null ? '' : String(port));
         } catch (error) {
             core_warning(`Could not read the proxy's port: ${main_message(error)}`);
@@ -14077,7 +14080,7 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
         setFailed(`devlanes start exited ${result.code}`);
     }
 }
-/** `command: with`: start the lane, run the script against it and stop what was started. */ async function withCommand(devlanes, inputs, state) {
+/** `command: with`: start the lane, run the script against it and stop what was started. */ async function withCommand(devlanes, inputs, state, project) {
     const argv = await writeScript(inputs.shell, inputs.run, process.env.RUNNER_TEMP ?? tmpdir(), process.platform);
     const keep = inputs.cleanup === 'keep' ? [
         '--keep'
@@ -14092,7 +14095,7 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
         '--',
         ...argv
     ], {
-        cwd: state.cwd,
+        ...project,
         stream: true
     });
     setOutput('exit-code', String(result.code));
@@ -14103,13 +14106,13 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
     }
     state_saveState(state);
 }
-/** `command: stop`: stop the lane now, write its logs and upload them. */ async function stop(devlanes, inputs, cwd) {
-    const laneEnv = await currentLane(devlanes, cwd);
-    if (!laneEnv) throw new Error(`No devlanes lane in ${cwd} to stop`);
+/** `command: stop`: stop the lane now, write its logs and upload them. */ async function stop(devlanes, inputs, project) {
+    const laneEnv = await currentLane(devlanes, project);
+    if (!laneEnv) throw new Error(`No devlanes lane in ${project.cwd} to stop`);
     const logsDir = laneLogsDir(process.env, laneEnv.lane);
     setOutput('lane', laneEnv.lane);
     setOutput('logs-dir', logsDir);
-    const lane = await laneStatus(devlanes, laneEnv.lane, cwd);
+    const lane = await laneStatus(devlanes, laneEnv.lane, project);
     const result = await devlanes.run([
         'stop',
         '--lane',
@@ -14117,7 +14120,7 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
         '--logs-dir',
         logsDir
     ], {
-        cwd,
+        ...project,
         stream: true
     });
     let failed = result.code !== 0 || failedUnits(lane).length > 0;

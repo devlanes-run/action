@@ -23,6 +23,7 @@ export interface Inputs {
   units: string[];
   timeout: string;
   workingDirectory: string;
+  file: string;
   home: string;
   config: string;
   trust: boolean;
@@ -57,6 +58,7 @@ export function readInputs(read: InputReader, platform: NodeJS.Platform): Inputs
     units: list(read('units'), /\s+/),
     timeout: read('timeout').trim(),
     workingDirectory: read('working-directory').trim() || '.',
+    file: read('file').trim(),
     home: read('home').trim(),
     config: read('config'),
     trust: flag(read, 'trust', true),

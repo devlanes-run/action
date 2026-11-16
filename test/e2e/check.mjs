@@ -1,9 +1,10 @@
 // Checks a lane that the action started, as a workflow step would use it. After `command: start`
 // the workflow passes the outputs in URLS, SERVICES, HTTPS_PORT and LANE; under `command: with`
-// only the lane's environment is there.
+// only the lane's environment is there. PROJECT names the project, `fixture` by default.
 
 import assert from 'node:assert/strict';
 
+const project = process.env.PROJECT || 'fixture';
 const outputs = Boolean(process.env.URLS);
 const urls = outputs
   ? JSON.parse(process.env.URLS ?? '{}')
@@ -19,11 +20,15 @@ async function json(url) {
   return response.json();
 }
 
-assert.match(urls.api ?? '', /^https:\/\/api\.fixture\d*\.localhost(:\d+)?$/, 'api URL');
+assert.match(
+  urls.api ?? '',
+  new RegExp(`^https://api\\.${project}\\d*\\.localhost(:\\d+)?$`),
+  'api URL'
+);
 assert.match(urls.worker ?? '', /^http:\/\/127\.0\.0\.1:\d+$/, 'worker URL without hostnames');
 assert.ok(process.env.NODE_EXTRA_CA_CERTS, 'NODE_EXTRA_CA_CERTS is set for this step');
 assert.ok(process.env.SSL_CERT_FILE?.endsWith('bundle.pem'), 'SSL_CERT_FILE names the bundle');
-assert.ok(process.env.DEVLANES_LANE_PROJECT === 'fixture', "the lane's variables are set");
+assert.ok(process.env.DEVLANES_LANE_PROJECT === project, "the lane's variables are set");
 
 // HTTPS through the proxy, trusted through NODE_EXTRA_CA_CERTS on every OS.
 assert.deepEqual(await json(`${urls.api}/healthz`), { path: '/healthz' });
@@ -36,7 +41,7 @@ if (outputs) {
 
   // low-ports lets the Linux proxy bind 443; macOS and Windows bind it without help.
   assert.equal(process.env.HTTPS_PORT, '443', 'the proxy listens on 443');
-  assert.match(process.env.LANE ?? '', /^fixture@\d+$/);
+  assert.match(process.env.LANE ?? '', new RegExp(`^${project}@\\d+$`));
 }
 
 console.log(`ok: ${urls.api} (${outputs ? 'start' : 'with'})`);

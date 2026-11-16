@@ -309,6 +309,50 @@ jobs:
           working-directory: first/test/fixtures/basic
           upload-logs: never
 
+  project-file:
+    name: Second project file
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Both files sit in one folder; the artifacts job checks that each project's post step
+    # uploaded its own logs under the default name.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Start the project of devlanes.yaml
+        id: dev
+        uses: ./
+        with:
+          version: ${{ env.DEVLANES_TEST_VERSION }}
+          working-directory: test/fixtures/basic
+          upload-logs: always
+          retention-days: 1
+
+      - name: Start the project of devlanes.prod.yaml
+        id: prod
+        uses: ./
+        with:
+          version: ${{ env.DEVLANES_TEST_VERSION }}
+          working-directory: test/fixtures/basic
+          file: devlanes.prod.yaml
+          upload-logs: always
+          retention-days: 1
+
+      - name: Check the outputs and the lane of devlanes.prod.yaml
+        run: node test/e2e/check.mjs
+        env:
+          PROJECT: fixture-prod
+          URLS: ${{ steps.prod.outputs.urls }}
+          SERVICES: ${{ steps.prod.outputs.services }}
+          HTTPS_PORT: ${{ steps.prod.outputs.https-port }}
+          LANE: ${{ steps.prod.outputs.lane }}
+
+      - name: Check each file has its own lane
+        if: steps.dev.outputs.lane == steps.prod.outputs.lane
+        run: |
+          echo "::error::both files use ${{ steps.dev.outputs.lane }}"
+          exit 1
+
   install:
     name: Install only on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
@@ -437,7 +481,16 @@ jobs:
   artifacts:
     name: Uploaded logs
     if: ${{ !cancelled() }}
-    needs: [e2e, infra, failure, failed-test, quiet, two-lanes, failed-script, unnamed]
+    needs:
+      - e2e
+      - infra
+      - failure
+      - failed-test
+      - quiet
+      - two-lanes
+      - project-file
+      - failed-script
+      - unnamed
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -481,6 +534,11 @@ jobs:
           node test/e2e/logs.mjs artifacts/devlanes-logs-two-infra unit-api.log infra-whoami.log
           test ! -e artifacts/devlanes-logs-two-basic
 
+      - name: Check each project file's logs got their own default name
+        run: |
+          node test/e2e/logs.mjs artifacts/devlanes-logs-second-project-file-fixture-0 unit-api.log
+          node test/e2e/logs.mjs artifacts/devlanes-logs-second-project-file-fixture-prod-0 unit-api.log
+
       - name: Check passing jobs uploaded nothing and matrix jobs got their own names
         shell: bash
         run: |
@@ -512,6 +570,7 @@ jobs:
       - failure
       - quiet
       - two-lanes
+      - project-file
       - install
       - hosts-helper
       - lockfile

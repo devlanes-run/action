@@ -1,0 +1,4 @@
+# A second project file next to devlanes.yaml, as for a production build: the same units under
+# another project name, so it gets lanes, hostnames and logs of its own.
+extends: devlanes.yaml
+project: fixture-prod

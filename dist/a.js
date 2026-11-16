@@ -82704,6 +82704,7 @@ const hostsModes = [
         units: inputs_list(read('units'), /\s+/),
         timeout: read('timeout').trim(),
         workingDirectory: read('working-directory').trim() || '.',
+        file: read('file').trim(),
         home: read('home').trim(),
         config: read('config'),
         trust: flag(read, 'trust', true),
@@ -82799,10 +82800,10 @@ const hostsModes = [
 
 /** A devlanes CLI at `bin`, run with `env`. */ function cli(bin, env) {
     return {
-        run: (args, options = {})=>spawnProcess(bin, args, env, options),
+        run: (args, options = {})=>spawnProcess(bin, fileArgs(args, options), env, options),
         async json (args, options = {}) {
             const result = await spawnProcess(bin, [
-                ...args,
+                ...fileArgs(args, options),
                 '--json'
             ], env, {
                 ...options,
@@ -82816,6 +82817,16 @@ const hostsModes = [
             return parseJson(result.stdout, args);
         }
     };
+}
+/**
+ * `args` with `--file` in front, where devlanes takes global options, since anything after the
+ * `--` of `devlanes with` belongs to the script.
+ */ function fileArgs(args, options) {
+    return options.file ? [
+        '--file',
+        options.file,
+        ...args
+    ] : args;
 }
 /** The last JSON document in `stdout`, since streaming commands print NDJSON. */ function parseJson(stdout, args) {
     const lines = stdout.trim().split(/\r?\n/).filter(Boolean);
