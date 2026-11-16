@@ -7,7 +7,7 @@ import "child_process";
 import { ok as external_assert_ok } from "assert";
 import { spawn } from "node:child_process";
 import { __webpack_require__ } from "./rslib-runtime.js";
-import { cli, compareVersions, getInput, shouldUpload, stoppedVariable, logs_artifactName, mkdirP, io_cp, urlOutputs, readInputs, resolvesToLoopback, serviceOutputs, releasePattern, rmRF, stoppedLanes, addHosts, writeDiagnostics, infraOutputs, failedUnits, setOutput, hostsPath, laneLogsDir, readyVariable, uploadLogs, addPath, parseJson, core_info, laneHostnames, httpsPort, core_debug, exportVariable, core_warning, setFailed, jobFailed, lib_HttpClient, state_saveState, isDebug, core_group, which, childEnv, exec_exec } from "./a.js";
+import { cli, compareVersions, getInput, shouldUpload, stoppedVariable, logs_artifactName, mkdirP, io_cp, urlOutputs, readInputs, resolvesToLoopback, serviceOutputs, releasePattern, rmRF, stoppedLanes, addHosts, writeDiagnostics, infraOutputs, failedUnits, setOutput, hostsPath, laneLogsDir, readyVariable, uploadLogs, addPath, parseJson, core_info, laneHostnames, httpsPort, core_debug, exportVariable, core_warning, setFailed, jobFailed, lib_HttpClient, state_saveState, isDebug, core_group, which, childEnv, exec_exec, profileOutput } from "./a.js";
 
 import { createRequire as __rspack_createRequire } from "node:module";
 const __rspack_createRequire_require = __rspack_createRequire(import.meta.url);
@@ -14060,6 +14060,7 @@ const releasesUrl = 'https://github.com/devlanes-run/devlanes/releases';
             const services = serviceOutputs(lane);
             setOutput('lane-index', lane.index === null ? '' : String(lane.index));
             setOutput('domain', lane.domain ?? '');
+            setOutput('profile', profileOutput(lane));
             setOutput('services', JSON.stringify(services));
             setOutput('urls', JSON.stringify(urlOutputs(services)));
             setOutput('infra', JSON.stringify(infraOutputs(lane)));

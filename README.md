@@ -108,7 +108,8 @@ While the lane starts, the log shows devlanes' own output: a collapsible group p
 | `logs-dir` | `start`, `with`, `stop` | Folder where the lane's logs are written when it stops. |
 | `lane-index` | `start` | The lane number. |
 | `domain` | `start` | The lane's domain, such as `acme.localhost`. |
-| `urls` | `start` | JSON object with each service's URL: the public `https://` one when the service has `hosts`, otherwise `http://127.0.0.1:<port>`. |
+| `profile` | `start` | Profiles the lane started with, separated by commas, such as `e2e`. Empty when devlanes reports none. |
+| `urls` | `start` | JSON object with the URL of each service that runs: the public `https://` one when the service has `hosts`, otherwise `http://127.0.0.1:<port>`. Services that are `idle`, `stopping`, `stopped` or `failed` are left out, since the proxy does not start them on a request; `services` still lists them. |
 | `services` | `start` | JSON object with each service's `state`, `kind`, `port`, `ports`, `url`, `public_url` and `urls`. |
 | `infra` | `start` | JSON object with each container's `state`, `shared`, `ports` and `urls`. `ports` maps the container port (Compose) or port name (plain containers) to the host port. |
 | `env` | `start` | JSON object with the lane's variables. |
