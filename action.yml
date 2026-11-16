@@ -10,7 +10,7 @@ branding:
 inputs:
   version:
     description: >-
-      devlanes version to install: `latest`, `next` or a release of 0.11.0 or later. Empty reads
+      devlanes version to install: `latest`, `next` or a release of 0.14.0 or later. Empty reads
       the version from a lockfile (pnpm, npm, yarn, bun, uv, poetry) or an exact version in
       package.json, searching `working-directory` and each folder above it up to the workspace.
       When no file names a version, the action installs 0.14.0, the release it was tested with.

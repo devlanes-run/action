@@ -89,10 +89,10 @@ function uploadMode(value: string): UploadMode {
 export const defaultVersion = '0.14.0';
 
 /**
- * The oldest devlanes the action supports: it runs `devlanes setup` (0.10.0) and exports the
- * lane's project as `DEVLANES_LANE_PROJECT` (0.11.0). Its CI runs against nothing older.
+ * The oldest devlanes the action supports: the first release whose hosts helper writes a sudo
+ * rule that current runners' visudo accepts (devlanes #203). Its CI runs against nothing older.
  */
-export const minimumVersion = '0.11.0';
+export const minimumVersion = '0.14.0';
 
 /** A bare release version, `X.Y.Z[-pre]`, in lower case. */
 export const releasePattern = /^\d+\.\d+\.\d+(-[0-9a-z.-]+)?$/;

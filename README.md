@@ -51,7 +51,7 @@ Runs a project's [devlanes](https://devlanes.run) lane in GitHub Actions: its co
 - run: pnpm test:e2e
 ```
 
-Tests read their base URLs from `DEVLANES_PUBLIC_URL_<SERVICE>`, such as `DEVLANES_PUBLIC_URL_WEB=https://web.acme.localhost`, and trust the HTTPS proxy's certificates through `NODE_EXTRA_CA_CERTS` and the other CA variables the action sets. The [devlanes docs](https://devlanes.run/docs/) cover `devlanes.yaml`, profiles, infra and the CLI. The action needs devlanes 0.11.0 or later.
+Tests read their base URLs from `DEVLANES_PUBLIC_URL_<SERVICE>`, such as `DEVLANES_PUBLIC_URL_WEB=https://web.acme.localhost`, and trust the HTTPS proxy's certificates through `NODE_EXTRA_CA_CERTS` and the other CA variables the action sets. The [devlanes docs](https://devlanes.run/docs/) cover `devlanes.yaml`, profiles, infra and the CLI. The action needs devlanes 0.14.0 or later.
 
 ## Commands
 
@@ -71,7 +71,7 @@ While the lane starts, the log shows devlanes' own output: a collapsible group p
 
 | Input | Default | Description |
 | --- | --- | --- |
-| `version` | from the lockfile, else `0.14.0` | devlanes version: `latest`, `next` (the newest build of devlanes' main branch) or a release of 0.11.0 or later. Empty reads the version from the project's lockfile, else uses 0.14.0, the release this version of the action was tested with. See [Choosing the devlanes version](#choosing-the-devlanes-version). |
+| `version` | from the lockfile, else `0.14.0` | devlanes version: `latest`, `next` (the newest build of devlanes' main branch) or a release of 0.14.0 or later. Empty reads the version from the project's lockfile, else uses 0.14.0, the release this version of the action was tested with. See [Choosing the devlanes version](#choosing-the-devlanes-version). |
 | `command` | `start` | `start`, `with`, `stop` or `install`. |
 | `run` | | Script for `command: with`. It runs in `working-directory` with the lane's environment. |
 | `shell` | `bash`, `pwsh` on Windows | Shell for `run`: `bash`, `sh`, `pwsh`, `powershell` or `cmd`, with the flags GitHub uses for `run:` steps. `bash` on Windows is Git Bash. |
@@ -311,15 +311,15 @@ A home under `runner.temp` keeps each job's lanes and ports apart from the previ
 A project that has devlanes as a dependency does not need `version`: the action installs the version its lockfile resolved, the same one the developers run.
 
 ```yaml
-# package.json has "devlanes": "^0.11.0" and pnpm-lock.yaml resolved it to 0.11.2
-- uses: devlanes-run/action@v0   # installs 0.11.2
+# package.json has "devlanes": "^0.14.0" and pnpm-lock.yaml resolved it to 0.14.0
+- uses: devlanes-run/action@v0   # installs 0.14.0
 ```
 
 The first of these that names a version wins:
 
-1. The `version` input: `latest`, `next` or a release such as `0.11.0`.
+1. The `version` input: `latest`, `next` or a release such as `0.14.0`.
 2. A lockfile that names devlanes.
-3. An exact version of devlanes in `package.json` (`dependencies`, `devDependencies` or `optionalDependencies`), such as `0.11.2`. Ranges such as `^0.11.0` are ignored.
+3. An exact version of devlanes in `package.json` (`dependencies`, `devDependencies` or `optionalDependencies`), such as `0.14.0`. Ranges such as `^0.14.0` are ignored.
 4. 0.14.0, the release this version of the action was tested with.
 
 The action looks in `working-directory`, then in each folder above it up to the workspace, and in each folder reads these files in this order:
@@ -333,14 +333,14 @@ The action looks in `working-directory`, then in each folder above it up to the 
 | `uv.lock`, `poetry.lock` | The `devlanes` package, with PyPI versions such as `0.8.0rc1` read as `0.8.0-rc.1`. |
 | `package.json` | An exact version only. |
 
-A file that cannot be parsed gets a warning and the search goes on. A version older than 0.11.0 fails the step; set `version` to install another one. The log and the `version-source` output say where the version came from.
+A file that cannot be parsed gets a warning and the search goes on. A version older than 0.14.0 fails the step; set `version` to install another one. The log and the `version-source` output say where the version came from.
 
 To pick the version in the workflow instead:
 
 ```yaml
 - uses: devlanes-run/action@v0
   with:
-    version: latest   # or next, or 0.11.0
+    version: latest   # or next, or 0.14.0
 ```
 
 ## Platforms

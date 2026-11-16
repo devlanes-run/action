@@ -12578,8 +12578,8 @@ const dependencyGroups = [
                 search.warn(`${source} names devlanes ${found}, which is not a release version; skipping it`);
                 continue;
             }
-            if (compareVersions(version, (/* inlined export .minimumVersion */"0.11.0")) < 0) {
-                throw new Error(`${source} pins devlanes ${version}, which is too old for this action; pin ${(/* inlined export .minimumVersion */"0.11.0")} or later or set version`);
+            if (compareVersions(version, (/* inlined export .minimumVersion */"0.14.0")) < 0) {
+                throw new Error(`${source} pins devlanes ${version}, which is too old for this action; pin ${(/* inlined export .minimumVersion */"0.14.0")} or later or set version`);
             }
             return {
                 version,
