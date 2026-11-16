@@ -1,6 +1,47 @@
+<p align="center">
+   <b>Using devlanes?</b> Please consider <a href="https://github.com/sponsors/arthurfiorette" target="_blank">donating</a> to support my open source work ❤️
+  <br />
+  <sup>
+   Help devlanes grow! Star and share this amazing repository with your friends and co-workers!
+  </sup>
+</p>
+
+<br />
+
+<p align="center" title="devlanes">
+  <a href="https://devlanes.run" target="_blank" rel="noopener noreferrer">
+    <img src="https://devlanes.run/assets/banner.png" alt="devlanes: Sandboxes for your agents. localhost for you." />
+  </a>
+</p>
+
+<br />
+
+<p align="center">
+  <a title="MIT license" target="_blank" href="https://github.com/devlanes-run/action/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/github/license/devlanes-run/action"></a>
+  <a title="Latest release" target="_blank" href="https://github.com/devlanes-run/action/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/devlanes-run/action"></a>
+  <a title="CI" target="_blank" href="https://github.com/devlanes-run/action/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/devlanes-run/action/ci.yml?branch=main&label=ci"></a>
+  <a title="Last commit" target="_blank" href="https://github.com/devlanes-run/action/commits/main"><img alt="Last commit" src="https://img.shields.io/github/last-commit/devlanes-run/action"></a>
+</p>
+
+<br />
+<br />
+
 # devlanes action
 
+> Your devlanes lane in GitHub Actions.
+
+<br />
+
 Runs a project's [devlanes](https://devlanes.run) lane in GitHub Actions: its containers, setup, tasks and services, with the same `devlanes.yaml` you use on your machine. The action installs devlanes, starts the lane and waits until every service is ready, and gives later steps the lane's URLs. At the end of the job it stops everything and uploads the logs if something failed.
+
+<br />
+
+- [Read the devlanes docs.](https://devlanes.run/docs/)
+- [Follow the guide on running tests in CI.](https://devlanes.run/docs/how-to/ci/ci/)
+
+<br />
+
+## Get started
 
 ```yaml
 - uses: actions/checkout@v7
@@ -10,7 +51,7 @@ Runs a project's [devlanes](https://devlanes.run) lane in GitHub Actions: its co
 - run: pnpm test:e2e
 ```
 
-Tests read their base URLs from `DEVLANES_PUBLIC_URL_<SERVICE>`, such as `DEVLANES_PUBLIC_URL_WEB=https://web.acme.localhost`, and trust the HTTPS proxy's certificates through `NODE_EXTRA_CA_CERTS` and the other CA variables the action sets. The [devlanes docs](https://devlanes.run/docs) cover `devlanes.yaml`, profiles, infra and the CLI. The action needs devlanes 0.11.0 or later.
+Tests read their base URLs from `DEVLANES_PUBLIC_URL_<SERVICE>`, such as `DEVLANES_PUBLIC_URL_WEB=https://web.acme.localhost`, and trust the HTTPS proxy's certificates through `NODE_EXTRA_CA_CERTS` and the other CA variables the action sets. The [devlanes docs](https://devlanes.run/docs/) cover `devlanes.yaml`, profiles, infra and the CLI. The action needs devlanes 0.11.0 or later.
 
 ## Commands
 
@@ -18,7 +59,7 @@ Tests read their base URLs from `DEVLANES_PUBLIC_URL_<SERVICE>`, such as `DEVLAN
 
 `start` (the default) starts the lane and leaves it running for the steps after it. The action's post step, which GitHub runs at the end of the job even after a failure or a cancellation, stops the lane and the daemon and writes each unit's log. When a step of the job failed, such as your tests, it uploads the logs.
 
-`with` starts the lane, runs the `run` script against it, then stops what it started, all in one step. The step fails when the lane does not start or the script fails, and `exit-code` holds what [`devlanes with`](https://devlanes.run/docs/reference/cli#devlanes-with) returned.
+`with` starts the lane, runs the `run` script against it, then stops what it started, all in one step. The step fails when the lane does not start or the script fails, and `exit-code` holds what [`devlanes with`](https://devlanes.run/docs/reference/cli/with/) returned.
 
 `stop` stops the lane now and writes its logs, instead of waiting for the end of the job, and uploads them as `upload-logs` says. Use it when later steps need the machine without the lane, or to upload the logs yourself.
 
@@ -339,7 +380,7 @@ Some programs skip the system resolver on any OS, such as Wrangler's workerd and
 | `true` | `hostnames.hosts_file: always` | always, and runs even with `trust: false`, which trusts the CA too |
 | `false` | `hostnames.hosts_file: never` | never |
 
-A `hostnames.hosts_file` set through `config` wins. See [hostnames and HTTPS](https://devlanes.run/docs/guides/https) in the devlanes docs.
+A `hostnames.hosts_file` set through `config` wins. See [Fix programs that cannot resolve \*.localhost](https://devlanes.run/docs/how-to/hostnames/resolve-localhost/) in the devlanes docs.
 
 ### Lanes in CI
 
@@ -365,6 +406,20 @@ A unit that fails gets an error annotation with its last log lines. Its whole lo
 
 Later steps can run devlanes commands such as `devlanes status`, `devlanes logs api --tail 200` and `devlanes debug why api`. On a self-hosted runner, `cleanup: keep` leaves the lane running after the job so you can inspect it.
 
+## Contributing
+
+The action is TypeScript, bundled into `dist/`, which is committed because GitHub runs it from there. You need Node 24.16 or later and pnpm 12.
+
+```sh
+pnpm install
+pnpm lint
+pnpm test-types
+pnpm test
+pnpm build
+```
+
+Commit `dist/` after `pnpm build`: CI fails when it differs from a fresh build. CI also starts a real lane with the action on Linux, macOS and Windows runners.
+
 ## License
 
-[MIT](LICENSE)
+Licensed under the **MIT License**. See [`LICENSE`](https://github.com/devlanes-run/action/blob/main/LICENSE) for more information.
