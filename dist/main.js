@@ -12595,7 +12595,7 @@ const dependencyGroups = [
         source: 'input'
     };
     return pinnedVersion(search) ?? {
-        version: (/* inlined export .defaultVersion */"0.11.0"),
+        version: (/* inlined export .defaultVersion */"0.14.0"),
         source: 'default'
     };
 }

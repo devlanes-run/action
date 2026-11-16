@@ -82728,7 +82728,7 @@ const hostsModes = [
 /**
  * The devlanes version this release of the action was tested with, installed when neither the
  * `version` input nor the project's files name one.
- */ const defaultVersion = '0.11.0';
+ */ const defaultVersion = '0.14.0';
 /**
  * The oldest devlanes the action supports: it runs `devlanes setup` (0.10.0) and exports the
  * lane's project as `DEVLANES_LANE_PROJECT` (0.11.0). Its CI runs against nothing older.

@@ -71,7 +71,7 @@ While the lane starts, the log shows devlanes' own output: a collapsible group p
 
 | Input | Default | Description |
 | --- | --- | --- |
-| `version` | from the lockfile, else `0.11.0` | devlanes version: `latest`, `next` (the newest build of devlanes' main branch) or a release of 0.11.0 or later. Empty reads the version from the project's lockfile, else uses 0.11.0, the release this version of the action was tested with. See [Choosing the devlanes version](#choosing-the-devlanes-version). |
+| `version` | from the lockfile, else `0.14.0` | devlanes version: `latest`, `next` (the newest build of devlanes' main branch) or a release of 0.11.0 or later. Empty reads the version from the project's lockfile, else uses 0.14.0, the release this version of the action was tested with. See [Choosing the devlanes version](#choosing-the-devlanes-version). |
 | `command` | `start` | `start`, `with`, `stop` or `install`. |
 | `run` | | Script for `command: with`. It runs in `working-directory` with the lane's environment. |
 | `shell` | `bash`, `pwsh` on Windows | Shell for `run`: `bash`, `sh`, `pwsh`, `powershell` or `cmd`, with the flags GitHub uses for `run:` steps. `bash` on Windows is Git Bash. |
@@ -320,7 +320,7 @@ The first of these that names a version wins:
 1. The `version` input: `latest`, `next` or a release such as `0.11.0`.
 2. A lockfile that names devlanes.
 3. An exact version of devlanes in `package.json` (`dependencies`, `devDependencies` or `optionalDependencies`), such as `0.11.2`. Ranges such as `^0.11.0` are ignored.
-4. 0.11.0, the release this version of the action was tested with.
+4. 0.14.0, the release this version of the action was tested with.
 
 The action looks in `working-directory`, then in each folder above it up to the workspace, and in each folder reads these files in this order:
 

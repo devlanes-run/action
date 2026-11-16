@@ -86,7 +86,7 @@ function uploadMode(value: string): UploadMode {
  * The devlanes version this release of the action was tested with, installed when neither the
  * `version` input nor the project's files name one.
  */
-export const defaultVersion = '0.11.0';
+export const defaultVersion = '0.14.0';
 
 /**
  * The oldest devlanes the action supports: it runs `devlanes setup` (0.10.0) and exports the

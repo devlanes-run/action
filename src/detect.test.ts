@@ -390,8 +390,8 @@ test('the log says where the version came from', () => {
     'Installing devlanes 0.11.2 from pnpm-lock.yaml'
   );
   assert.equal(
-    versionMessage({ version: '0.11.0', source: 'default' }),
-    "Installing devlanes 0.11.0, the action's default (no lockfile names devlanes)"
+    versionMessage({ version: '0.14.0', source: 'default' }),
+    "Installing devlanes 0.14.0, the action's default (no lockfile names devlanes)"
   );
   assert.equal(
     versionMessage({ version: 'next', source: 'input' }),
